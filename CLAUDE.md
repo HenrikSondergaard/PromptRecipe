@@ -1,60 +1,63 @@
 # Prompt Recipe
 
-## Vad projektet gör och vilket problem det löser
+## What the project does and what problem it solves
 
-Utvecklare som använder AI-kodagenter (Claude Code, Codex m.fl.) får sämre 
-resultat när de ger vaga eller ofullständiga promptar. Det är svårt att komma 
-ihåg alla detaljer som en agent behöver: kontext, constraints, format, vad som 
-INTE ska göras, osv.
+Developers using AI coding agents (Claude Code, Codex, etc.) get poor results
+when they provide vague or incomplete prompts. It is hard to remember all the
+details an agent needs: context, constraints, output format, what NOT to do, etc.
 
-Prompt Recipe är ett trestegsverktyg:
+Prompt Recipe is a three-step tool:
 
-1. **Recept** — Användaren startar ett nytt recept och svarar på guidade frågor,
-   ELLER klistrar in en befintlig bristfällig prompt och svarar på kompletterande 
-   frågor. Appen säkerställer att inga viktiga ingredienser saknas.
+1. **Recipe** — The user starts a new recipe and answers a series of guided
+   questions, OR pastes an existing weak prompt and answers follow-up questions.
+   The app ensures no important ingredients are missing.
 
-2. **Inköpskorg** — Appen sammanställer svaren till en strukturerad 
-   "prompt-inköpskorg": en tydlig lista med alla ingredienser som behövs för 
-   en komplett prompt. Användaren kopierar korgen med ett klick.
+2. **Shopping cart** — The app assembles the answers into a structured
+   "prompt shopping cart": a clear list of all the ingredients needed for a
+   complete prompt. The user copies the cart with one click.
 
-3. **Bygg** — Användaren klistrar in korgen i sin AI-chatt (Claude.ai, ChatGPT 
-   m.fl.) som i sin tur formulerar den kompletta, välstrukturerade prompten. 
-   Den färdiga prompten används sedan i kodagenten (Claude Code, Codex m.fl.).
+3. **Build** — The user pastes the cart into their AI chat tool (Claude.ai,
+   ChatGPT, etc.), which then formulates the complete, well-structured prompt.
+   That final prompt is used in the coding agent (Claude Code, Codex, etc.).
 
-Appen genererar alltså INTE prompten själv — den samlar in rätt information 
-och låter användarens valda AI göra formuleringen.
+The app does NOT generate the final prompt itself — it collects the right
+information and lets the user's chosen AI do the formulation.
 
-## Teknikstack
+## Tech stack
 
-- **Blazor WebAssembly (.NET 9)** — C# i webbläsaren via WebAssembly, deploybar
-  statiskt till GitHub Pages utan server.
-- **GitHub Pages** — hosting via gh-pages-branch med GitHub Actions workflow.
-- Inga externa beroenden, inget API, inga nycklar — helt statisk app.
+- **Blazor WebAssembly (.NET 9)** — C# running in the browser via WebAssembly,
+  deployable as a fully static site to GitHub Pages with no server required.
+- **GitHub Pages** — hosting via a gh-pages branch with a GitHub Actions workflow.
+- No external dependencies, no API calls, no keys — completely static app.
 
-Motivering: Projektägaren är .NET/C#-utvecklare. Blazor WASM ger rätt balans 
-mellan välkänd teknik och lärande utan ny backend-stack. Ingen server behövs 
-eftersom appen enbart hanterar lokal state och textgenerering.
+Rationale: The project owner is a .NET/C# developer. Blazor WASM provides the
+right balance between familiar technology and new learning, without requiring a
+new backend stack. No server is needed because the app only manages local state
+and text assembly.
 
-## Arkitekturprinciper
+## Architecture principles
 
-- **Flödet är linjärt och explicit** — tre tydliga steg (Recept → Korg → Klar) 
-  med tydligt state för vilket steg användaren befinner sig i.
-- **All logik för frågor och sammanställning lever i en service** 
-  (`Services/RecipeService.cs`). Komponenter hanterar enbart UI.
-- **Varje steg är en egen Razor-komponent** — RecipeForm, ShoppingCart, 
-  DoneView. Ingen komponent känner till de andra.
-- **Ingen global state** — state skickas nedåt via parametrar och uppåt via 
+- **The flow is linear and explicit** — three clearly defined steps
+  (Recipe → Cart → Done) with explicit state tracking for the current step.
+- **All question logic and assembly logic lives in one service**
+  (`Services/RecipeService.cs`). Components handle UI only.
+- **Each step is its own Razor component** — RecipeForm, ShoppingCart, DoneView.
+  No component knows about the others.
+- **No global state** — state is passed down via parameters and up via
   EventCallback.
-- **Frågorna är datadrivna** — listan med frågor definieras som data 
-  (lista av objekt), inte som hårdkodad markup. Lätt att lägga till/ändra frågor.
+- **Questions are data-driven** — the question list is defined as data
+  (a list of objects), not as hardcoded markup. Easy to add or change questions
+  without touching UI code.
 
-## Saker agenten INTE ska göra
+## What the agent must NOT do
 
-- **Integrera inget externt API** — inga AI-anrop, inga API-nycklar, 
-  ingen autentisering. Appen är och förblir helt statisk.
-- **Lägg inte till NuGet-paket** utan att fråga och motivera varför.
-- **Byt inte UI-bibliotek** utan att fråga — håll dig till standard Blazor + CSS.
-- **Skapa inte globala variabler eller Singleton-services med tillstånd.**
-- **Generera inte den färdiga prompten** — appens ansvar slutar vid inköpskorgen.
-- **Introducera inte JavaScript interop** om problemet kan lösas i C#.
-- **Ändra inte GitHub Actions-workflow** utan att förklara vad som ändras och varför.
+- **Do not integrate any external API** — no AI calls, no API keys, no
+  authentication. The app is and remains completely static.
+- **Do not add NuGet packages** without asking and explaining why.
+- **Do not switch UI libraries** without asking — stick to standard Blazor + CSS.
+- **Do not create global variables or stateful Singleton services.**
+- **Do not generate the final prompt** — the app's responsibility ends at the
+  shopping cart.
+- **Do not introduce JavaScript interop** if the problem can be solved in C#.
+- **Do not modify the GitHub Actions workflow** without explaining what changes
+  and why.
