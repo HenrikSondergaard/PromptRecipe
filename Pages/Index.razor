@@ -1,5 +1,67 @@
 @page "/"
+@using PromptRecipe.Components
+@using PromptRecipe.Services
+@inject RecipeService RecipeService
 
 <PageTitle>Prompt Recipe</PageTitle>
 
-<p>Coming soon.</p>
+<nav class="step-indicator">
+    <span class="step @StepClass(Step.Recipe)">
+        <span class="step-number">1</span>
+        <span class="step-name">Recipe</span>
+    </span>
+    <span class="step-connector"></span>
+    <span class="step @StepClass(Step.Cart)">
+        <span class="step-number">2</span>
+        <span class="step-name">Cart</span>
+    </span>
+    <span class="step-connector"></span>
+    <span class="step @StepClass(Step.Done)">
+        <span class="step-number">3</span>
+        <span class="step-name">Done</span>
+    </span>
+</nav>
+
+@if (_currentStep == Step.Recipe)
+{
+    <RecipeForm OnComplete="HandleRecipeComplete" />
+}
+else if (_currentStep == Step.Cart)
+{
+    <ShoppingCart Cart="@_cart" OnDone="HandleCartDone" />
+}
+else if (_currentStep == Step.Done)
+{
+    <DoneView OnRestart="HandleRestart" />
+}
+
+@code {
+    private enum Step { Recipe, Cart, Done }
+
+    private Step _currentStep = Step.Recipe;
+    private Dictionary<string, string> _answers = new();
+    private string _cart = string.Empty;
+
+    private string StepClass(Step step)
+    {
+        if (step == _currentStep) return "step--active";
+        if (step < _currentStep)  return "step--done";
+        return string.Empty;
+    }
+
+    private void HandleRecipeComplete(Dictionary<string, string> answers)
+    {
+        _answers = answers;
+        _cart    = RecipeService.AssembleCart(answers);
+        _currentStep = Step.Cart;
+    }
+
+    private void HandleCartDone() => _currentStep = Step.Done;
+
+    private void HandleRestart()
+    {
+        _answers     = new();
+        _cart        = string.Empty;
+        _currentStep = Step.Recipe;
+    }
+}
