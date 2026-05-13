@@ -4,7 +4,7 @@ namespace PromptRecipe.Services;
 
 public class RecipeService
 {
-    private const string Sep = "||";
+    private const string MultiSelectSeparator = "||";
 
     public static readonly IReadOnlyList<RecipeQuestion> Questions = new List<RecipeQuestion>
     {
@@ -163,7 +163,7 @@ public class RecipeService
         return options;
     }
 
-    private static string FormatMultiSelect(string? raw)
+    public static string FormatMultiSelect(string? raw)
     {
         if (string.IsNullOrWhiteSpace(raw)) return "";
         var items = ParseMultiSelect(raw);
@@ -173,12 +173,12 @@ public class RecipeService
     public static List<string> ParseMultiSelect(string? value)
     {
         if (string.IsNullOrWhiteSpace(value)) return new List<string>();
-        return value.Split(Sep, StringSplitOptions.RemoveEmptyEntries)
+        return value.Split(MultiSelectSeparator, StringSplitOptions.RemoveEmptyEntries)
                     .Select(s => s.Trim())
                     .Where(s => s.Length > 0)
                     .ToList();
     }
 
     public static string JoinMultiSelect(IEnumerable<string> values) =>
-        string.Join(Sep, values);
+        string.Join(MultiSelectSeparator, values);
 }
