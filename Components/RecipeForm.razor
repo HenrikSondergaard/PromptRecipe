@@ -18,7 +18,7 @@
                 }
                 else if (question.Type == QuestionType.SingleChoice)
                 {
-                    var recommended = question.Key == "OutputFormat"
+                    var recommended = question.Key == QuestionKeys.OutputFormat
                         ? RecipeService.GetRecommendedOutputFormat(_answers)
                         : null;
 
@@ -137,10 +137,10 @@
 
     private bool IsValid()
     {
-        if (string.IsNullOrWhiteSpace(GetAnswer("TaskType")))   return false;
-        if (string.IsNullOrWhiteSpace(GetAnswer("Area")))       return false;
-        if (string.IsNullOrWhiteSpace(GetAnswer("WhatToDo")))   return false;
-        if (string.IsNullOrWhiteSpace(GetAnswer("OutputFormat"))) return false;
+        if (string.IsNullOrWhiteSpace(GetAnswer(QuestionKeys.TaskType)))     return false;
+        if (string.IsNullOrWhiteSpace(GetAnswer(QuestionKeys.Area)))         return false;
+        if (string.IsNullOrWhiteSpace(GetAnswer(QuestionKeys.WhatToDo)))     return false;
+        if (string.IsNullOrWhiteSpace(GetAnswer(QuestionKeys.OutputFormat))) return false;
         return true;
     }
 
