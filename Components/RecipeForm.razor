@@ -1,0 +1,152 @@
+@using PromptRecipe.Services
+@inject RecipeService RecipeService
+
+<div class="recipe-form">
+    <form @onsubmit="HandleSubmit" @onsubmit:preventDefault>
+
+        @foreach (var question in RecipeService.Questions)
+        {
+            <div class="question-block" id="q-@question.Key">
+                <p class="question-label">@question.Label</p>
+
+                @if (question.Type == QuestionType.FreeText)
+                {
+                    <textarea class="input-text"
+                              value="@GetAnswer(question.Key)"
+                              @oninput="e => SetAnswer(question.Key, e.Value?.ToString() ?? string.Empty)"
+                              rows="3" />
+                }
+                else if (question.Type == QuestionType.SingleChoice)
+                {
+                    var recommended = question.Key == "OutputFormat"
+                        ? RecipeService.GetRecommendedOutputFormat(_answers)
+                        : null;
+
+                    <div class="options-list">
+                        @foreach (var opt in question.BaseOptions)
+                        {
+                            var isChecked = GetAnswer(question.Key) == opt;
+                            var isRec    = opt == recommended && string.IsNullOrEmpty(GetAnswer(question.Key));
+                            <label class="option-radio @(isRec ? "option-recommended" : "")">
+                                <input type="radio"
+                                       name="@question.Key"
+                                       value="@opt"
+                                       checked="@isChecked"
+                                       @onchange="() => SetAnswer(question.Key, opt)" />
+                                <span>@opt</span>
+                                @if (isRec)
+                                {
+                                    <span class="badge-recommended">Recommended</span>
+                                }
+                            </label>
+                        }
+                    </div>
+                }
+                else if (question.Type == QuestionType.MultiSelectWithOther
+                      || question.Type == QuestionType.MultiSelectWithFreeText)
+                {
+                    var dynamicOptions = RecipeService.GetOptionsFor(question.Key, _answers);
+
+                    <div class="options-list">
+                        @foreach (var opt in dynamicOptions)
+                        {
+                            var isChecked = IsSelected(question.Key, opt);
+                            <label class="option-checkbox">
+                                <input type="checkbox"
+                                       checked="@isChecked"
+                                       @onchange="e => ToggleOption(question.Key, opt, (bool)(e.Value ?? false))" />
+                                <span>@opt</span>
+                            </label>
+                        }
+
+                        @if (question.Type == QuestionType.MultiSelectWithOther)
+                        {
+                            <div class="other-input">
+                                <span class="other-label">Other:</span>
+                                <input type="text"
+                                       class="input-other"
+                                       placeholder="Type to add..."
+                                       value="@GetOtherText(question.Key)"
+                                       @oninput="e => SetOtherText(question.Key, e.Value?.ToString() ?? string.Empty)" />
+                            </div>
+                        }
+                    </div>
+
+                    @if (question.Type == QuestionType.MultiSelectWithFreeText
+                      && question.FreeTextKey is not null)
+                    {
+                        <div class="companion-text">
+                            <p class="question-sublabel">@question.FreeTextLabel</p>
+                            <textarea class="input-text"
+                                      value="@GetAnswer(question.FreeTextKey)"
+                                      @oninput="e => SetAnswer(question.FreeTextKey, e.Value?.ToString() ?? string.Empty)"
+                                      rows="3"
+                                      placeholder="Be specific about the desired outcome..." />
+                        </div>
+                    }
+                }
+            </div>
+        }
+
+        <div class="form-actions">
+            <button type="submit" class="btn-primary" disabled="@(!IsValid())">
+                Build my cart →
+            </button>
+        </div>
+
+    </form>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public EventCallback<Dictionary<string, string>> OnComplete { get; set; }
+
+    private readonly Dictionary<string, string> _answers   = new();
+    private readonly Dictionary<string, string> _otherTexts = new();
+
+    private string GetAnswer(string key) =>
+        _answers.GetValueOrDefault(key, string.Empty);
+
+    private void SetAnswer(string key, string value) =>
+        _answers[key] = value;
+
+    private bool IsSelected(string key, string option) =>
+        RecipeService.ParseMultiSelect(GetAnswer(key)).Contains(option);
+
+    private void ToggleOption(string key, string option, bool selected)
+    {
+        var current = RecipeService.ParseMultiSelect(GetAnswer(key));
+        if (selected && !current.Contains(option)) current.Add(option);
+        else if (!selected) current.Remove(option);
+        _answers[key] = RecipeService.JoinMultiSelect(current);
+    }
+
+    private string GetOtherText(string key) =>
+        _otherTexts.GetValueOrDefault(key, string.Empty);
+
+    private void SetOtherText(string key, string value)
+    {
+        _otherTexts[key] = value;
+        var current = RecipeService.ParseMultiSelect(GetAnswer(key))
+            .Where(v => !v.StartsWith("Other:", StringComparison.Ordinal))
+            .ToList();
+        if (!string.IsNullOrWhiteSpace(value))
+            current.Add($"Other: {value.Trim()}");
+        _answers[key] = RecipeService.JoinMultiSelect(current);
+    }
+
+    private bool IsValid()
+    {
+        if (string.IsNullOrWhiteSpace(GetAnswer("TaskType")))   return false;
+        if (string.IsNullOrWhiteSpace(GetAnswer("Area")))       return false;
+        if (string.IsNullOrWhiteSpace(GetAnswer("WhatToDo")))   return false;
+        if (string.IsNullOrWhiteSpace(GetAnswer("OutputFormat"))) return false;
+        return true;
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (!IsValid()) return;
+        await OnComplete.InvokeAsync(new Dictionary<string, string>(_answers));
+    }
+}
