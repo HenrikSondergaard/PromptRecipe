@@ -97,7 +97,7 @@ public class RecipeService
         {
             QuestionKeys.TechStack   => GetTechOptions(currentAnswers),
             QuestionKeys.Constraints => GetConstraintOptions(currentAnswers),
-            _ => Questions.First(q => q.Key == key).BaseOptions
+            _ => Questions.FirstOrDefault(q => q.Key == key)?.BaseOptions ?? Array.Empty<string>()
         };
     }
 
