@@ -8,10 +8,6 @@ public enum QuestionType
     MultiSelectWithFreeText
 }
 
-/// <summary>
-/// Describes one question in the recipe form.
-/// For MultiSelectWithFreeText, FreeTextLabel and FreeTextKey name the companion text field.
-/// </summary>
 public record RecipeQuestion(
     string Key,
     string Label,
@@ -22,7 +18,6 @@ public record RecipeQuestion(
 
 public class RecipeService
 {
-    // Multi-select values are stored as pipe-separated strings: "A||B||C"
     private const string Sep = "||";
 
     public static readonly IReadOnlyList<RecipeQuestion> Questions = new List<RecipeQuestion>
@@ -46,7 +41,7 @@ public class RecipeService
         new("TechStack",
             "What tech stack is involved?",
             QuestionType.MultiSelectWithOther,
-            Array.Empty<string>()),   // options resolved dynamically from Area
+            Array.Empty<string>()),
 
         new("RelevantFiles",
             "Which files, folders, or areas are relevant? (optional)",
@@ -56,7 +51,7 @@ public class RecipeService
         new("Constraints",
             "What should the agent NOT do?",
             QuestionType.MultiSelectWithOther,
-            Array.Empty<string>()),   // options resolved dynamically from Area + TechStack
+            Array.Empty<string>()),
 
         new("OutputFormat",
             "How should the agent present its work?",
@@ -80,8 +75,6 @@ public class RecipeService
             Array.Empty<string>())
     };
 
-    // ─── Tech options by area ─────────────────────────────────────────────────
-
     private static readonly Dictionary<string, string[]> TechByArea = new()
     {
         ["Frontend / UI"]   = new[] { "React", "Next.js", "Vue", "Angular", "Svelte", "Blazor", "HTML / CSS", "TypeScript", "JavaScript", "Tailwind CSS" },
@@ -94,8 +87,6 @@ public class RecipeService
         ["CLI / Scripts"]   = new[] { "Bash / Shell", "PowerShell", "Python scripts", "Node scripts" },
         ["Documentation"]   = new[] { "Markdown", "OpenAPI / Swagger", "JSDoc / XML docs" }
     };
-
-    // ─── Constraint options by area ───────────────────────────────────────────
 
     private static readonly string[] GeneralConstraints =
     {
@@ -114,9 +105,6 @@ public class RecipeService
         ["Infra / DevOps"]  = new[] { "Don't change CI/CD pipelines", "Don't modify environment variables" }
     };
 
-    // ─── Public API ───────────────────────────────────────────────────────────
-
-    /// <summary>Returns the current dynamic option list for a question key.</summary>
     public IReadOnlyList<string> GetOptionsFor(string key, Dictionary<string, string> currentAnswers)
     {
         return key switch
@@ -127,7 +115,6 @@ public class RecipeService
         };
     }
 
-    /// <summary>Returns the option that should be pre-highlighted for OutputFormat.</summary>
     public string GetRecommendedOutputFormat(Dictionary<string, string> currentAnswers)
     {
         var taskType = currentAnswers.GetValueOrDefault("TaskType", "");
@@ -142,28 +129,31 @@ public class RecipeService
         };
     }
 
-    /// <summary>Assembles all answers into a formatted prompt cart string.</summary>
     public string AssembleCart(Dictionary<string, string> answers)
     {
         var sb = new System.Text.StringBuilder();
         sb.AppendLine("=== PROMPT RECIPE CART ===");
         sb.AppendLine();
 
-        Append(sb, "Task type",            answers.GetValueOrDefault("TaskType"));
-        Append(sb, "Area(s)",              FormatMultiSelect(answers.GetValueOrDefault("Area")));
-        Append(sb, "What to do",           answers.GetValueOrDefault("WhatToDo"));
-        Append(sb, "Tech stack",           FormatMultiSelect(answers.GetValueOrDefault("TechStack")));
-        Append(sb, "Relevant files",       answers.GetValueOrDefault("RelevantFiles"));
-        Append(sb, "Constraints (do NOT)", FormatMultiSelect(answers.GetValueOrDefault("Constraints")));
-        Append(sb, "Output format",        answers.GetValueOrDefault("OutputFormat"));
-        Append(sb, "Must not break",       answers.GetValueOrDefault("PreserveWhat"));
-        Append(sb, "Extra context",        answers.GetValueOrDefault("ExtraContext"));
+        AppendSection(sb, "Task type",            answers.GetValueOrDefault("TaskType"));
+        AppendSection(sb, "Area(s)",              FormatMultiSelect(answers.GetValueOrDefault("Area")));
+        AppendSection(sb, "What to do",           answers.GetValueOrDefault("WhatToDo"));
+        AppendSection(sb, "Tech stack",           FormatMultiSelect(answers.GetValueOrDefault("TechStack")));
+        AppendSection(sb, "Relevant files",       answers.GetValueOrDefault("RelevantFiles"));
+        AppendSection(sb, "Constraints (do NOT)", FormatMultiSelect(answers.GetValueOrDefault("Constraints")));
+        AppendSection(sb, "Output format",        answers.GetValueOrDefault("OutputFormat"));
+        AppendSection(sb, "Must not break",       answers.GetValueOrDefault("PreserveWhat"));
+        AppendSection(sb, "Extra context",        answers.GetValueOrDefault("ExtraContext"));
 
         sb.AppendLine("==========================");
         return sb.ToString();
     }
 
-    // ─── Private helpers ──────────────────────────────────────────────────────
+    private static void AppendSection(System.Text.StringBuilder sb, string label, string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+            sb.AppendLine($"{label}: {value}");
+    }
 
     private IReadOnlyList<string> GetTechOptions(Dictionary<string, string> answers)
     {
