@@ -1,20 +1,6 @@
+using PromptRecipe.Models;
+
 namespace PromptRecipe.Services;
-
-public enum QuestionType
-{
-    FreeText,
-    SingleChoice,
-    MultiSelectWithOther,
-    MultiSelectWithFreeText
-}
-
-public record RecipeQuestion(
-    string Key,
-    string Label,
-    QuestionType Type,
-    IReadOnlyList<string> BaseOptions,
-    string? FreeTextLabel = null,
-    string? FreeTextKey = null);
 
 public class RecipeService
 {
