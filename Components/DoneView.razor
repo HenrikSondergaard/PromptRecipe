@@ -1,0 +1,18 @@
+<div class="done-view">
+    <div class="done-icon">✓</div>
+    <h2>You're all set!</h2>
+    <ol class="done-steps">
+        <li>Paste your cart into <strong>Claude.ai, ChatGPT,</strong> or your preferred AI tool.</li>
+        <li>Ask it to <strong>build a complete prompt</strong> from the ingredients.</li>
+        <li>Paste the resulting prompt into your <strong>coding agent</strong> (Claude Code, Codex, etc.).</li>
+    </ol>
+    <button class="btn-secondary" @onclick="HandleRestart">
+        ← Start a new recipe
+    </button>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public EventCallback OnRestart { get; set; }
+
+    private async Task HandleRestart() => await OnRestart.InvokeAsync();
+}
