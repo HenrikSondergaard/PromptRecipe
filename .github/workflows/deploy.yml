@@ -1,37 +1,28 @@
 name: Deploy to GitHub Pages
-
 on:
   push:
     branches: [main]
   workflow_dispatch:
-
 permissions:
   contents: write
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Setup .NET 9
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
-
-      - name: Install Blazor WASM workload
-        run: dotnet workload install wasm-tools
-
+      - name: Restore Blazor WASM workloads
+        run: dotnet workload restore
       - name: Publish
         run: dotnet publish -c Release -o release
-
       - name: Set base href for GitHub Pages sub-path
         run: |
           sed -i 's|<base href="/" />|<base href="/PromptRecipe/" />|' release/wwwroot/index.html
-
       - name: Add .nojekyll
         run: touch release/wwwroot/.nojekyll
-
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
