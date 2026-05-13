@@ -14,10 +14,12 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
-      - name: Restore Blazor WASM workloads
-        run: dotnet workload restore
+      - name: Install Blazor WASM workloads
+        run: dotnet workload install wasm-tools
+      - name: Restore NuGet packages
+        run: dotnet restore
       - name: Publish
-        run: dotnet publish -c Release -o release
+        run: dotnet publish -c Release -o release --no-restore
       - name: Set base href for GitHub Pages sub-path
         run: |
           sed -i 's|<base href="/" />|<base href="/PromptRecipe/" />|' release/wwwroot/index.html
