@@ -88,7 +88,11 @@ public class RecipeService
         ["Backend / API"]   = new[] { "Don't change public API contracts", "Don't change auth logic", "Don't add middleware", "Don't change error handling" },
         ["Database"]        = new[] { "Don't change the schema", "Don't add migrations", "Don't change existing queries" },
         ["Auth / Security"] = new[] { "Don't change permission models", "Don't modify token handling" },
-        ["Infra / DevOps"]  = new[] { "Don't change CI/CD pipelines", "Don't modify environment variables" }
+        ["Infra / DevOps"]  = new[] { "Don't change CI/CD pipelines", "Don't modify environment variables" },
+        ["Testing / QA"]    = new[] { "Don't remove existing test cases", "Don't change test helpers / fixtures", "Don't add new test frameworks" },
+        ["Mobile"]          = new[] { "Don't change navigation structure", "Don't modify platform-specific code", "Don't add new app permissions" },
+        ["CLI / Scripts"]   = new[] { "Don't change argument / flag interfaces", "Don't modify existing output format", "Don't break backward compatibility" },
+        ["Documentation"]   = new[] { "Don't change document structure / headings", "Don't modify existing code examples", "Don't change tone or style" }
     };
 
     public IReadOnlyList<string> GetOptionsFor(string key, Dictionary<string, string> currentAnswers)
