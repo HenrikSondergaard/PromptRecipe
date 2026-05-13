@@ -7,6 +7,6 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-builder.Services.AddTransient<RecipeService>();
+builder.Services.AddSingleton<RecipeService>();
 
 await builder.Build().RunAsync();
