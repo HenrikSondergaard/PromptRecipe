@@ -1,0 +1,21 @@
+/* Prompt Recipe — global styles placeholder (full styling in issue #7) */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #f8f9fa;
+    color: #212529;
+    line-height: 1.6;
+}
+
+.loading {
+    display: flex;
+    justify-content: center;
+    padding: 4rem;
+    color: #6c757d;
+}
