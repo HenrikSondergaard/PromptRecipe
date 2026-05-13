@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "PromptRecipe",
   "resources": {
-    "hash": "sha256-oPU13fbieyZhqwgkK1D7GbzK7zabarTS5NI4+XUjGDY=",
+    "hash": "sha256-vvvhKGR8Tkf8g8wJdKw16cY4fcJE9asOAJFhq2SG+5I=",
     "fingerprinting": {
       "Microsoft.AspNetCore.Components.dhpvrs3yj1.wasm": "Microsoft.AspNetCore.Components.wasm",
       "Microsoft.AspNetCore.Components.Web.yhbm7yutpi.wasm": "Microsoft.AspNetCore.Components.Web.wasm",
@@ -32,7 +32,7 @@
       "System.Text.Json.7zptpp7wru.wasm": "System.Text.Json.wasm",
       "System.Text.RegularExpressions.rs9b7ykfzr.wasm": "System.Text.RegularExpressions.wasm",
       "System.Private.CoreLib.2bmqy5cm5p.wasm": "System.Private.CoreLib.wasm",
-      "PromptRecipe.7q4kuqhp2p.wasm": "PromptRecipe.wasm",
+      "PromptRecipe.qsvsyzfhnq.wasm": "PromptRecipe.wasm",
       "dotnet.js": "dotnet.js",
       "dotnet.native.xsn1d6x2kd.js": "dotnet.native.js",
       "dotnet.native.vz0adxojrz.wasm": "dotnet.native.wasm",
@@ -87,7 +87,7 @@
       "System.Text.Encodings.Web.jcc0mnauy4.wasm": "sha256-g/Cc00CC4N00kHv3CM4swNDmJiXIGFZ51wbyItw+7tw=",
       "System.Text.Json.7zptpp7wru.wasm": "sha256-PaqL5NrxLtfa2ZiHXHf3rf8iZgMx6GD+TrONf79ymWk=",
       "System.Text.RegularExpressions.rs9b7ykfzr.wasm": "sha256-WzXHMmZ1kz109jtctos7qA2Km7G32rQUz7UcatGJvCg=",
-      "PromptRecipe.7q4kuqhp2p.wasm": "sha256-7yre3Tt1TzJ55oLJfUNEmMwCodnBmG/jujCoW1hNx7g="
+      "PromptRecipe.qsvsyzfhnq.wasm": "sha256-+o3jyKLrO5x1M+g/ujmodpGk9Hpt0TTLLNHPR9kSWT4="
     }
   },
   "cacheBootResources": true,
