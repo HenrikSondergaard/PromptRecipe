@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "PromptRecipe",
   "resources": {
-    "hash": "sha256-Si/QVpXktE3J0QjCUoHeQ9fP94bygzCAxPiGTxcyLm0=",
+    "hash": "sha256-oPU13fbieyZhqwgkK1D7GbzK7zabarTS5NI4+XUjGDY=",
     "fingerprinting": {
       "Microsoft.AspNetCore.Components.dhpvrs3yj1.wasm": "Microsoft.AspNetCore.Components.wasm",
       "Microsoft.AspNetCore.Components.Web.yhbm7yutpi.wasm": "Microsoft.AspNetCore.Components.Web.wasm",
@@ -10,7 +10,7 @@
       "Microsoft.Extensions.Configuration.Abstractions.f9jq6u05xu.wasm": "Microsoft.Extensions.Configuration.Abstractions.wasm",
       "Microsoft.Extensions.Configuration.Json.77nptesqpn.wasm": "Microsoft.Extensions.Configuration.Json.wasm",
       "Microsoft.Extensions.DependencyInjection.g8opmrm9gr.wasm": "Microsoft.Extensions.DependencyInjection.wasm",
-      "Microsoft.Extensions.DependencyInjection.Abstractions.2wf0crbbcr.wasm": "Microsoft.Extensions.DependencyInjection.Abstractions.wasm",
+      "Microsoft.Extensions.DependencyInjection.Abstractions.79jyouopt1.wasm": "Microsoft.Extensions.DependencyInjection.Abstractions.wasm",
       "Microsoft.Extensions.Logging.5g1hnmwyc5.wasm": "Microsoft.Extensions.Logging.wasm",
       "Microsoft.Extensions.Logging.Abstractions.udb0ns9y9g.wasm": "Microsoft.Extensions.Logging.Abstractions.wasm",
       "Microsoft.Extensions.Options.9zsgy7ya5a.wasm": "Microsoft.Extensions.Options.wasm",
@@ -32,7 +32,7 @@
       "System.Text.Json.7zptpp7wru.wasm": "System.Text.Json.wasm",
       "System.Text.RegularExpressions.rs9b7ykfzr.wasm": "System.Text.RegularExpressions.wasm",
       "System.Private.CoreLib.2bmqy5cm5p.wasm": "System.Private.CoreLib.wasm",
-      "PromptRecipe.p3pk8gfkv4.wasm": "PromptRecipe.wasm",
+      "PromptRecipe.7q4kuqhp2p.wasm": "PromptRecipe.wasm",
       "dotnet.js": "dotnet.js",
       "dotnet.native.xsn1d6x2kd.js": "dotnet.native.js",
       "dotnet.native.vz0adxojrz.wasm": "dotnet.native.wasm",
@@ -67,7 +67,7 @@
       "Microsoft.Extensions.Configuration.Abstractions.f9jq6u05xu.wasm": "sha256-AyL87FvJMf14Dcn8HeQ3n2veg/RQGVGCjfpJPt1RQC4=",
       "Microsoft.Extensions.Configuration.Json.77nptesqpn.wasm": "sha256-TUkUL2Leb3zmGe8ZZUHAzyb8vZoEzua1H8f8stc7xRw=",
       "Microsoft.Extensions.DependencyInjection.g8opmrm9gr.wasm": "sha256-EPey4pvx6aL8aj8zL05ip1ZJSUG7DjjOrtL9aPRDYPw=",
-      "Microsoft.Extensions.DependencyInjection.Abstractions.2wf0crbbcr.wasm": "sha256-cph98Fdkl45/ocZCBSbcwJefU7XAZ/x2xwYJ0MDYquc=",
+      "Microsoft.Extensions.DependencyInjection.Abstractions.79jyouopt1.wasm": "sha256-BVoCOPyTXl+QCkUKvBs6qzMhdA4vuTGSaOtk8/KqUgU=",
       "Microsoft.Extensions.Logging.5g1hnmwyc5.wasm": "sha256-a881iT/kmq3LnryJklnQzsMD93/W6dM0x/3xSE38e6I=",
       "Microsoft.Extensions.Logging.Abstractions.udb0ns9y9g.wasm": "sha256-orBsRyrmQ2tga4R/Z9nE0NDH6jGWYutysMdSEM1i6/o=",
       "Microsoft.Extensions.Options.9zsgy7ya5a.wasm": "sha256-tXQZqZqNvPMoYp2INR4AOHcvE8kWly2WAYbjvmmuiXU=",
@@ -87,7 +87,7 @@
       "System.Text.Encodings.Web.jcc0mnauy4.wasm": "sha256-g/Cc00CC4N00kHv3CM4swNDmJiXIGFZ51wbyItw+7tw=",
       "System.Text.Json.7zptpp7wru.wasm": "sha256-PaqL5NrxLtfa2ZiHXHf3rf8iZgMx6GD+TrONf79ymWk=",
       "System.Text.RegularExpressions.rs9b7ykfzr.wasm": "sha256-WzXHMmZ1kz109jtctos7qA2Km7G32rQUz7UcatGJvCg=",
-      "PromptRecipe.p3pk8gfkv4.wasm": "sha256-6wucNGfRS+bAQdkyd3EKjP/nJrgS91vDsUcePgiIFZo="
+      "PromptRecipe.7q4kuqhp2p.wasm": "sha256-7yre3Tt1TzJ55oLJfUNEmMwCodnBmG/jujCoW1hNx7g="
     }
   },
   "cacheBootResources": true,
