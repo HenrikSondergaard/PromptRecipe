@@ -1,0 +1,40 @@
+@inject IJSRuntime JS
+
+<div class="shopping-cart">
+    <div class="cart-header">
+        <h2>Your Prompt Cart</h2>
+        <p class="cart-subtitle">Copy this and paste it into your AI tool (Claude.ai, ChatGPT, etc.)
+            to build your final prompt.</p>
+    </div>
+
+    <div class="cart-body">
+        <pre class="cart-text">@Cart</pre>
+    </div>
+
+    <div class="cart-actions">
+        <button class="btn-copy @(_copied ? "btn-copy--done" : "")" @onclick="CopyToClipboard">
+            @(_copied ? "✓ Copied!" : "Copy to clipboard")
+        </button>
+        <button class="btn-secondary" @onclick="HandleDone">
+            Done →
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Cart { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public EventCallback OnDone { get; set; }
+
+    private bool _copied;
+
+    private async Task CopyToClipboard()
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", Cart);
+        _copied = true;
+        StateHasChanged();
+        await Task.Delay(2000);
+        _copied = false;
+    }
+
+    private async Task HandleDone() => await OnDone.InvokeAsync();
+}
