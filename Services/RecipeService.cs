@@ -8,12 +8,12 @@ public class RecipeService
 
     public static readonly IReadOnlyList<RecipeQuestion> Questions = new List<RecipeQuestion>
     {
-        new("TaskType",
+        new(QuestionKeys.TaskType,
             "What kind of task is this?",
             QuestionType.SingleChoice,
             new[] { "New feature", "Bug fix", "Refactor / Clean up", "Explain code", "Write tests" }),
 
-        new("Area",
+        new(QuestionKeys.Area,
             "Which area(s) does this involve?",
             QuestionType.MultiSelectWithFreeText,
             new[]
@@ -22,24 +22,24 @@ public class RecipeService
                 "Infra / DevOps", "Testing / QA", "Documentation", "Mobile", "CLI / Scripts"
             },
             FreeTextLabel: "What exactly do you want the agent to do?",
-            FreeTextKey: "WhatToDo"),
+            FreeTextKey: QuestionKeys.WhatToDo),
 
-        new("TechStack",
+        new(QuestionKeys.TechStack,
             "What tech stack is involved?",
             QuestionType.MultiSelectWithOther,
             Array.Empty<string>()),
 
-        new("RelevantFiles",
+        new(QuestionKeys.RelevantFiles,
             "Which files, folders, or areas are relevant? (optional)",
             QuestionType.FreeText,
             Array.Empty<string>()),
 
-        new("Constraints",
+        new(QuestionKeys.Constraints,
             "What should the agent NOT do?",
             QuestionType.MultiSelectWithOther,
             Array.Empty<string>()),
 
-        new("OutputFormat",
+        new(QuestionKeys.OutputFormat,
             "How should the agent present its work?",
             QuestionType.SingleChoice,
             new[]
@@ -50,12 +50,12 @@ public class RecipeService
                 "Explain first, then confirm before coding"
             }),
 
-        new("PreserveWhat",
+        new(QuestionKeys.PreserveWhat,
             "What existing behaviour must NOT break?",
             QuestionType.FreeText,
             Array.Empty<string>()),
 
-        new("ExtraContext",
+        new(QuestionKeys.ExtraContext,
             "Anything else the agent should know? (optional)",
             QuestionType.FreeText,
             Array.Empty<string>())
@@ -95,16 +95,16 @@ public class RecipeService
     {
         return key switch
         {
-            "TechStack"   => GetTechOptions(currentAnswers),
-            "Constraints" => GetConstraintOptions(currentAnswers),
+            QuestionKeys.TechStack   => GetTechOptions(currentAnswers),
+            QuestionKeys.Constraints => GetConstraintOptions(currentAnswers),
             _ => Questions.First(q => q.Key == key).BaseOptions
         };
     }
 
     public string GetRecommendedOutputFormat(Dictionary<string, string> currentAnswers)
     {
-        var taskType = currentAnswers.GetValueOrDefault("TaskType", "");
-        var areas    = ParseMultiSelect(currentAnswers.GetValueOrDefault("Area", ""));
+        var taskType = currentAnswers.GetValueOrDefault(QuestionKeys.TaskType, "");
+        var areas    = ParseMultiSelect(currentAnswers.GetValueOrDefault(QuestionKeys.Area, ""));
 
         return taskType switch
         {
@@ -121,15 +121,15 @@ public class RecipeService
         sb.AppendLine("=== PROMPT RECIPE CART ===");
         sb.AppendLine();
 
-        AppendSection(sb, "Task type",            answers.GetValueOrDefault("TaskType"));
-        AppendSection(sb, "Area(s)",              FormatMultiSelect(answers.GetValueOrDefault("Area")));
-        AppendSection(sb, "What to do",           answers.GetValueOrDefault("WhatToDo"));
-        AppendSection(sb, "Tech stack",           FormatMultiSelect(answers.GetValueOrDefault("TechStack")));
-        AppendSection(sb, "Relevant files",       answers.GetValueOrDefault("RelevantFiles"));
-        AppendSection(sb, "Constraints (do NOT)", FormatMultiSelect(answers.GetValueOrDefault("Constraints")));
-        AppendSection(sb, "Output format",        answers.GetValueOrDefault("OutputFormat"));
-        AppendSection(sb, "Must not break",       answers.GetValueOrDefault("PreserveWhat"));
-        AppendSection(sb, "Extra context",        answers.GetValueOrDefault("ExtraContext"));
+        AppendSection(sb, "Task type",            answers.GetValueOrDefault(QuestionKeys.TaskType));
+        AppendSection(sb, "Area(s)",              FormatMultiSelect(answers.GetValueOrDefault(QuestionKeys.Area)));
+        AppendSection(sb, "What to do",           answers.GetValueOrDefault(QuestionKeys.WhatToDo));
+        AppendSection(sb, "Tech stack",           FormatMultiSelect(answers.GetValueOrDefault(QuestionKeys.TechStack)));
+        AppendSection(sb, "Relevant files",       answers.GetValueOrDefault(QuestionKeys.RelevantFiles));
+        AppendSection(sb, "Constraints (do NOT)", FormatMultiSelect(answers.GetValueOrDefault(QuestionKeys.Constraints)));
+        AppendSection(sb, "Output format",        answers.GetValueOrDefault(QuestionKeys.OutputFormat));
+        AppendSection(sb, "Must not break",       answers.GetValueOrDefault(QuestionKeys.PreserveWhat));
+        AppendSection(sb, "Extra context",        answers.GetValueOrDefault(QuestionKeys.ExtraContext));
 
         sb.AppendLine("==========================");
         return sb.ToString();
@@ -143,7 +143,7 @@ public class RecipeService
 
     private IReadOnlyList<string> GetTechOptions(Dictionary<string, string> answers)
     {
-        var areas = ParseMultiSelect(answers.GetValueOrDefault("Area", ""));
+        var areas = ParseMultiSelect(answers.GetValueOrDefault(QuestionKeys.Area, ""));
         var options = new List<string>();
         foreach (var area in areas)
             if (TechByArea.TryGetValue(area, out var techs))
@@ -154,7 +154,7 @@ public class RecipeService
 
     private IReadOnlyList<string> GetConstraintOptions(Dictionary<string, string> answers)
     {
-        var areas = ParseMultiSelect(answers.GetValueOrDefault("Area", ""));
+        var areas = ParseMultiSelect(answers.GetValueOrDefault(QuestionKeys.Area, ""));
         var options = new List<string>(GeneralConstraints);
         foreach (var area in areas)
             if (ConstraintsByArea.TryGetValue(area, out var constraints))
