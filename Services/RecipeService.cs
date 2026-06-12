@@ -63,15 +63,15 @@ public class RecipeService
 
     private static readonly Dictionary<string, string[]> TechByArea = new()
     {
-        ["Frontend / UI"]   = new[] { "React", "Next.js", "Vue", "Angular", "Svelte", "Blazor", "HTML / CSS", "TypeScript", "JavaScript", "Tailwind CSS" },
-        ["Backend / API"]   = new[] { "Node.js / Express", "Python / Django / FastAPI", ".NET / C#", "Java / Spring", "Go", "Ruby on Rails", "PHP / Laravel", "Rust" },
-        ["Database"]        = new[] { "PostgreSQL", "MySQL / MariaDB", "SQLite", "MongoDB", "Redis", "SQL Server", "Firebase / Firestore" },
+        ["Frontend / UI"] = new[] { "React", "Next.js", "Vue", "Angular", "Svelte", "Blazor", "HTML / CSS", "TypeScript", "JavaScript", "Tailwind CSS" },
+        ["Backend / API"] = new[] { "Node.js / Express", "Python / Django / FastAPI", ".NET / C#", "Java / Spring", "Go", "Ruby on Rails", "PHP / Laravel", "Rust" },
+        ["Database"] = new[] { "PostgreSQL", "MySQL / MariaDB", "SQLite", "MongoDB", "Redis", "SQL Server", "Firebase / Firestore" },
         ["Auth / Security"] = new[] { "OAuth / OpenID", "JWT", "Auth0", "Firebase Auth", "ASP.NET Identity" },
-        ["Infra / DevOps"]  = new[] { "Docker", "Kubernetes", "GitHub Actions", "Terraform", "AWS", "Azure", "GCP" },
-        ["Mobile"]          = new[] { "React Native", "Flutter", "Swift / SwiftUI", "Kotlin / Android", ".NET MAUI" },
-        ["Testing / QA"]    = new[] { "Jest", "Vitest", "xUnit / NUnit", "Playwright", "Cypress", "Selenium", "PyTest" },
-        ["CLI / Scripts"]   = new[] { "Bash / Shell", "PowerShell", "Python scripts", "Node scripts" },
-        ["Documentation"]   = new[] { "Markdown", "OpenAPI / Swagger", "JSDoc / XML docs" }
+        ["Infra / DevOps"] = new[] { "Docker", "Kubernetes", "GitHub Actions", "Terraform", "AWS", "Azure", "GCP" },
+        ["Mobile"] = new[] { "React Native", "Flutter", "Swift / SwiftUI", "Kotlin / Android", ".NET MAUI" },
+        ["Testing / QA"] = new[] { "Jest", "Vitest", "xUnit / NUnit", "Playwright", "Cypress", "Selenium", "PyTest" },
+        ["CLI / Scripts"] = new[] { "Bash / Shell", "PowerShell", "Python scripts", "Node scripts" },
+        ["Documentation"] = new[] { "Markdown", "OpenAPI / Swagger", "JSDoc / XML docs" }
     };
 
     private static readonly string[] GeneralConstraints =
@@ -84,9 +84,9 @@ public class RecipeService
 
     private static readonly Dictionary<string, string[]> ConstraintsByArea = new()
     {
-        ["Frontend / UI"]   = new[] { "Don't change UI design / styling", "Don't add CSS libraries", "Don't break existing components", "Don't change routing" },
-        ["Backend / API"]   = new[] { "Don't change public API contracts", "Don't change auth logic", "Don't add middleware", "Don't change error handling" },
-        ["Database"]        = new[] { "Don't change the schema", "Don't add migrations", "Don't change existing queries" },
+        ["Frontend / UI"] = new[] { "Don't change UI design / styling", "Don't add CSS libraries", "Don't break existing components", "Don't change routing" },
+        ["Backend / API"] = new[] { "Don't change public API contracts", "Don't change auth logic", "Don't add middleware", "Don't change error handling" },
+        ["Database"] = new[] { "Don't change the schema", "Don't add migrations", "Don't change existing queries" },
         ["Auth / Security"] = new[] { "Don't change permission models", "Don't modify token handling" },
         ["Infra / DevOps"]  = new[] { "Don't change CI/CD pipelines", "Don't modify environment variables" },
         ["Testing / QA"]    = new[] { "Don't remove existing test cases", "Don't change test helpers / fixtures", "Don't add new test frameworks" },
@@ -113,7 +113,7 @@ public class RecipeService
         return taskType switch
         {
             "Explain code" => "Explain first, then confirm before coding",
-            "Bug fix"      => "Code + brief explanation",
+            "Bug fix" => "Code + brief explanation",
             "New feature" when areas.Count > 1 => "Step-by-step with explanations",
             _ => "Code + brief explanation"
         };

@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Install Blazor WASM workloads
+        run: dotnet workload install wasm-tools
+
+      - name: Restore
+        run: dotnet restore PromptRecipe.csproj
+
+      - name: Restore test project
+        run: dotnet restore PromptRecipe.Tests/PromptRecipe.Tests.csproj
+
+      - name: Build
+        run: dotnet build PromptRecipe.csproj --no-restore -c Release
+
+      - name: Lint (verify formatting)
+        run: dotnet format PromptRecipe.csproj --verify-no-changes --severity warn
+
+      - name: Test
+        run: dotnet test PromptRecipe.Tests/PromptRecipe.Tests.csproj --verbosity normal --collect:"XPlat Code Coverage"
