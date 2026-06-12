@@ -2,6 +2,12 @@
 @inject RecipeService RecipeService
 
 <div class="recipe-form">
+    <div class="d-badge">
+        <span class="d-number">D2</span>
+        <span class="d-label">Description</span>
+        <span class="d-desc">Effectively describing your goals to prompt useful AI behaviours and outputs.</span>
+    </div>
+
     <form @onsubmit="HandleSubmit" @onsubmit:preventDefault>
 
         @foreach (var question in RecipeService.Questions)

@@ -1,11 +1,30 @@
+@inject PromptRecipe.Services.RecipeService RecipeService
+
 <div class="done-view">
+    <div class="d-badge">
+        <span class="d-number">D4</span>
+        <span class="d-label">Diligence</span>
+        <span class="d-desc">Taking responsibility for what we do with AI and how we do it.</span>
+    </div>
+
     <div class="done-icon">✓</div>
-    <h2>You're all set!</h2>
-    <ol class="done-steps">
-        <li>Paste your cart into <strong>Claude.ai, ChatGPT,</strong> or your preferred AI tool.</li>
-        <li>Ask it to <strong>build a complete prompt</strong> from the ingredients.</li>
-        <li>Paste the resulting prompt into your <strong>coding agent</strong> (Claude Code, Codex, etc.).</li>
-    </ol>
+    <h2>Before you apply the changes</h2>
+    <p class="done-subtitle">Work through this checklist before committing the AI output.</p>
+
+    <ul class="diligence-checklist">
+        @foreach (var item in _items)
+        {
+            <li class="checklist-item">
+                <label>
+                    <input type="checkbox" @bind="item.Checked" />
+                    <span>@item.Text</span>
+                </label>
+            </li>
+        }
+    </ul>
+
+    <p class="done-progress">@_items.Count(i => i.Checked) / @_items.Count completed</p>
+
     <button class="btn-secondary" @onclick="HandleRestart">
         ← Start a new recipe
     </button>
@@ -13,6 +32,24 @@
 
 @code {
     [Parameter, EditorRequired] public EventCallback OnRestart { get; set; }
+    [Parameter, EditorRequired] public Dictionary<string, string> Answers { get; set; } = new();
+    [Parameter, EditorRequired] public Dictionary<string, string> DelegationAnswers { get; set; } = new();
+
+    private sealed class ChecklistItem(string text)
+    {
+        public string Text { get; } = text;
+        public bool Checked { get; set; }
+    }
+
+    private List<ChecklistItem> _items = new();
+
+    protected override void OnParametersSet()
+    {
+        _items = RecipeService
+            .GetDiligenceItems(Answers, DelegationAnswers)
+            .Select(t => new ChecklistItem(t))
+            .ToList();
+    }
 
     private async Task HandleRestart() => await OnRestart.InvokeAsync();
 }

@@ -6,23 +6,32 @@
 <PageTitle>Prompt Recipe</PageTitle>
 
 <nav class="step-indicator">
-    <span class="step @StepClass(Step.Recipe)">
+    <span class="step @StepClass(Step.Delegation)">
         <span class="step-number">1</span>
-        <span class="step-name">Recipe</span>
+        <span class="step-name">Delegation</span>
+    </span>
+    <span class="step-connector"></span>
+    <span class="step @StepClass(Step.Recipe)">
+        <span class="step-number">2</span>
+        <span class="step-name">Description</span>
     </span>
     <span class="step-connector"></span>
     <span class="step @StepClass(Step.Cart)">
-        <span class="step-number">2</span>
-        <span class="step-name">Cart</span>
+        <span class="step-number">3</span>
+        <span class="step-name">Discernment</span>
     </span>
     <span class="step-connector"></span>
     <span class="step @StepClass(Step.Done)">
-        <span class="step-number">3</span>
-        <span class="step-name">Done</span>
+        <span class="step-number">4</span>
+        <span class="step-name">Diligence</span>
     </span>
 </nav>
 
-@if (_currentStep == Step.Recipe)
+@if (_currentStep == Step.Delegation)
+{
+    <DelegationCheck OnComplete="HandleDelegationComplete" />
+}
+else if (_currentStep == Step.Recipe)
 {
     <RecipeForm OnComplete="HandleRecipeComplete" />
 }
@@ -32,13 +41,16 @@ else if (_currentStep == Step.Cart)
 }
 else if (_currentStep == Step.Done)
 {
-    <DoneView OnRestart="HandleRestart" />
+    <DoneView Answers="_answers"
+              DelegationAnswers="_delegationAnswers"
+              OnRestart="HandleRestart" />
 }
 
 @code {
-    private enum Step { Recipe, Cart, Done }
+    private enum Step { Delegation, Recipe, Cart, Done }
 
-    private Step _currentStep = Step.Recipe;
+    private Step _currentStep = Step.Delegation;
+    private Dictionary<string, string> _delegationAnswers = new();
     private Dictionary<string, string> _answers = new();
     private string _cart = string.Empty;
 
@@ -47,6 +59,12 @@ else if (_currentStep == Step.Done)
         if (step == _currentStep) return "step--active";
         if (step < _currentStep)  return "step--done";
         return string.Empty;
+    }
+
+    private void HandleDelegationComplete(Dictionary<string, string> answers)
+    {
+        _delegationAnswers = answers;
+        _currentStep = Step.Recipe;
     }
 
     private void HandleRecipeComplete(Dictionary<string, string> answers)
@@ -60,8 +78,9 @@ else if (_currentStep == Step.Done)
 
     private void HandleRestart()
     {
-        _answers     = new();
-        _cart        = string.Empty;
-        _currentStep = Step.Recipe;
+        _delegationAnswers = new();
+        _answers           = new();
+        _cart              = string.Empty;
+        _currentStep       = Step.Delegation;
     }
 }

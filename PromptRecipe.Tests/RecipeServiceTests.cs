@@ -1,6 +1,7 @@
 using PromptRecipe.Models;
 using PromptRecipe.Services;
 using Xunit;
+#pragma warning disable CA1861 // avoid constant arrays in attributes — test data is fine here
 
 namespace PromptRecipe.Tests;
 
@@ -270,9 +271,120 @@ public class AssembleCartTests
 
     private static Dictionary<string, string> MinimalAnswers() => new()
     {
-        [QuestionKeys.TaskType]    = "New feature",
-        [QuestionKeys.Area]        = "Frontend / UI",
-        [QuestionKeys.WhatToDo]    = "Add a login page",
+        [QuestionKeys.TaskType] = "New feature",
+        [QuestionKeys.Area] = "Frontend / UI",
+        [QuestionKeys.WhatToDo] = "Add a login page",
         [QuestionKeys.OutputFormat] = "Code + brief explanation"
     };
+
+    [Fact]
+    public void AssembleCart_ContainsDiscernmentSection()
+    {
+        var cart = Svc.AssembleCart(MinimalAnswers());
+        Assert.Contains("--- WHAT TO CHECK IN THE OUTPUT ---", cart);
+        Assert.Contains("• Verify the output matches what you asked for", cart);
+    }
+}
+
+public class GetDiscernmentItemsTests
+{
+    private static readonly RecipeService Svc = new();
+
+    [Fact]
+    public void AlwaysIncludesBaseVerification()
+    {
+        var items = Svc.GetDiscernmentItems(new Dictionary<string, string>());
+        Assert.Contains("Verify the output matches what you asked for", items);
+    }
+
+    [Fact]
+    public void BugFix_AddsReproductionCheck()
+    {
+        var answers = new Dictionary<string, string> { [QuestionKeys.TaskType] = "Bug fix" };
+        var items = Svc.GetDiscernmentItems(answers);
+        Assert.Contains(items, i => i.Contains("Reproduce the bug"));
+    }
+
+    [Fact]
+    public void AuthArea_AddsSecurityCheck()
+    {
+        var answers = new Dictionary<string, string>
+        {
+            [QuestionKeys.Area] = "Auth / Security"
+        };
+        var items = Svc.GetDiscernmentItems(answers);
+        Assert.Contains(items, i => i.Contains("authentication"));
+    }
+
+    [Fact]
+    public void PreserveWhat_AddsVerificationItem()
+    {
+        var answers = new Dictionary<string, string>
+        {
+            [QuestionKeys.PreserveWhat] = "Login flow must keep working"
+        };
+        var items = Svc.GetDiscernmentItems(answers);
+        Assert.Contains(items, i => i.Contains("Login flow must keep working"));
+    }
+
+    [Fact]
+    public void NoSensitiveAreas_NoSecurityCheck()
+    {
+        var answers = new Dictionary<string, string>
+        {
+            [QuestionKeys.Area] = "Documentation"
+        };
+        var items = Svc.GetDiscernmentItems(answers);
+        Assert.DoesNotContain(items, i => i.Contains("authentication"));
+    }
+}
+
+public class GetDiligenceItemsTests
+{
+    private static readonly RecipeService Svc = new();
+
+    [Fact]
+    public void AlwaysIncludesDiffReview()
+    {
+        var items = Svc.GetDiligenceItems(new Dictionary<string, string>(), new Dictionary<string, string>());
+        Assert.Contains("Review the complete code diff before applying", items);
+    }
+
+    [Fact]
+    public void BugFix_AddsRunTests()
+    {
+        var recipe = new Dictionary<string, string> { [QuestionKeys.TaskType] = "Bug fix" };
+        var items = Svc.GetDiligenceItems(recipe, new Dictionary<string, string>());
+        Assert.Contains(items, i => i.Contains("test suite"));
+    }
+
+    [Fact]
+    public void HighRisk_AddsSecondReview()
+    {
+        var delegation = new Dictionary<string, string>
+        {
+            [DelegationKeys.Risk] = "High — touches sensitive or production systems"
+        };
+        var items = Svc.GetDiligenceItems(new Dictionary<string, string>(), delegation);
+        Assert.Contains(items, i => i.Contains("second review"));
+    }
+
+    [Fact]
+    public void DatabaseArea_AddsBackupReminder()
+    {
+        var recipe = new Dictionary<string, string> { [QuestionKeys.Area] = "Database" };
+        var items = Svc.GetDiligenceItems(recipe, new Dictionary<string, string>());
+        Assert.Contains(items, i => i.Contains("Back up data"));
+    }
+
+    [Fact]
+    public void HaventDecided_AddsWarning()
+    {
+        var delegation = new Dictionary<string, string>
+        {
+            [DelegationKeys.ReviewPlan] = "Haven't decided yet"
+        };
+        var items = Svc.GetDiligenceItems(new Dictionary<string, string>(), delegation);
+        Assert.Contains(items, i => i.Contains("Decide your validation"));
+    }
 }

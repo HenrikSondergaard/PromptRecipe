@@ -1,0 +1,112 @@
+@using PromptRecipe.Models
+
+<div class="recipe-form">
+    <div class="d-badge">
+        <span class="d-number">D1</span>
+        <span class="d-label">Delegation</span>
+        <span class="d-desc">Setting goals and deciding whether, when and how to engage with AI.</span>
+    </div>
+
+    <div class="question-block">
+        <p class="question-label">Is this task clear enough to hand off to AI?</p>
+        <div class="options-list">
+            @foreach (var opt in _clarityOptions)
+            {
+                <label class="option-radio">
+                    <input type="radio"
+                           name="clarity"
+                           checked="@(_answers.GetValueOrDefault(DelegationKeys.Clarity) == opt)"
+                           @onchange="() => _answers[DelegationKeys.Clarity] = opt" />
+                    <span>@opt</span>
+                </label>
+            }
+        </div>
+    </div>
+
+    <div class="question-block">
+        <p class="question-label">What's the consequence if the AI makes a mistake?</p>
+        <div class="options-list">
+            @foreach (var opt in _riskOptions)
+            {
+                <label class="option-radio">
+                    <input type="radio"
+                           name="risk"
+                           checked="@(_answers.GetValueOrDefault(DelegationKeys.Risk) == opt)"
+                           @onchange="() => _answers[DelegationKeys.Risk] = opt" />
+                    <span>@opt</span>
+                </label>
+            }
+        </div>
+    </div>
+
+    <div class="question-block">
+        <p class="question-label">How will you validate the output? <span class="optional-label">(select all that apply)</span></p>
+        <div class="options-list">
+            @foreach (var opt in _reviewOptions)
+            {
+                <label class="option-checkbox">
+                    <input type="checkbox"
+                           checked="@_reviewSelected.Contains(opt)"
+                           @onchange="() => ToggleReview(opt)" />
+                    <span>@opt</span>
+                </label>
+            }
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button class="btn-primary" @onclick="HandleSubmit" disabled="@(!IsValid())">
+            Start Recipe →
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public EventCallback<Dictionary<string, string>> OnComplete { get; set; }
+
+    private static readonly string[] _clarityOptions =
+    {
+        "Yes — scope and goal are well defined",
+        "Mostly — some assumptions needed",
+        "Not yet — needs more thought first"
+    };
+
+    private static readonly string[] _riskOptions =
+    {
+        "Low — easy to spot and revert",
+        "Medium — needs careful review",
+        "High — touches sensitive or production systems"
+    };
+
+    private static readonly string[] _reviewOptions =
+    {
+        "Run the test suite",
+        "Review the full code diff",
+        "Manual testing",
+        "Get a colleague to review",
+        "Haven't decided yet"
+    };
+
+    private readonly Dictionary<string, string> _answers = new();
+    private readonly List<string> _reviewSelected = new();
+
+    private bool IsValid() =>
+        _answers.ContainsKey(DelegationKeys.Clarity) &&
+        _answers.ContainsKey(DelegationKeys.Risk);
+
+    private void ToggleReview(string option)
+    {
+        if (_reviewSelected.Contains(option))
+            _reviewSelected.Remove(option);
+        else
+            _reviewSelected.Add(option);
+
+        _answers[DelegationKeys.ReviewPlan] = string.Join("||", _reviewSelected);
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (!IsValid()) return;
+        await OnComplete.InvokeAsync(new Dictionary<string, string>(_answers));
+    }
+}

@@ -135,8 +135,91 @@ public class RecipeService
         AppendSection(sb, "Must not break", answers.GetValueOrDefault(QuestionKeys.PreserveWhat));
         AppendSection(sb, "Extra context", answers.GetValueOrDefault(QuestionKeys.ExtraContext));
 
+        sb.AppendLine();
+        sb.AppendLine("--- WHAT TO CHECK IN THE OUTPUT ---");
+        foreach (var item in GetDiscernmentItems(answers))
+            sb.AppendLine($"• {item}");
+
         sb.AppendLine("==========================");
         return sb.ToString();
+    }
+
+    public IReadOnlyList<string> GetDiscernmentItems(Dictionary<string, string> answers)
+    {
+        var items = new List<string>();
+        var taskType = answers.GetValueOrDefault(QuestionKeys.TaskType, "");
+        var areas = ParseMultiSelect(answers.GetValueOrDefault(QuestionKeys.Area, ""));
+        var constraints = ParseMultiSelect(answers.GetValueOrDefault(QuestionKeys.Constraints, ""));
+        var preserveWhat = answers.GetValueOrDefault(QuestionKeys.PreserveWhat, "");
+
+        items.Add("Verify the output matches what you asked for");
+
+        if (taskType == "Bug fix")
+            items.Add("Reproduce the bug first — confirm the fix actually resolves it");
+
+        if (taskType == "Refactor / Clean up")
+            items.Add("Behaviour must be unchanged — verify all tests still pass");
+
+        if (areas.Contains("Auth / Security"))
+            items.Add("Review every change to authentication and authorisation logic");
+
+        if (areas.Contains("Database"))
+            items.Add("Verify no unintended schema or data changes");
+
+        if (areas.Contains("Backend / API"))
+            items.Add("Confirm no public API contracts were changed");
+
+        if (areas.Contains("Infra / DevOps"))
+            items.Add("Check CI/CD and environment variable changes carefully");
+
+        foreach (var c in constraints.Where(c => !string.IsNullOrWhiteSpace(c)))
+            items.Add($"Constraint respected: \"{c}\"");
+
+        if (!string.IsNullOrWhiteSpace(preserveWhat))
+            items.Add($"Verify this still works: {preserveWhat}");
+
+        return items;
+    }
+
+    public IReadOnlyList<string> GetDiligenceItems(
+        Dictionary<string, string> recipeAnswers,
+        Dictionary<string, string> delegationAnswers)
+    {
+        var items = new List<string>();
+        var taskType = recipeAnswers.GetValueOrDefault(QuestionKeys.TaskType, "");
+        var areas = ParseMultiSelect(recipeAnswers.GetValueOrDefault(QuestionKeys.Area, ""));
+        var preserveWhat = recipeAnswers.GetValueOrDefault(QuestionKeys.PreserveWhat, "");
+        var risk = delegationAnswers.GetValueOrDefault(DelegationKeys.Risk, "");
+        var reviewPlan = ParseMultiSelect(delegationAnswers.GetValueOrDefault(DelegationKeys.ReviewPlan, ""));
+
+        items.Add("Review the complete code diff before applying");
+
+        if (reviewPlan.Contains("Run the test suite")
+            || taskType is "Bug fix" or "Refactor / Clean up" or "Write tests")
+            items.Add("Run the full test suite");
+
+        if (reviewPlan.Contains("Manual testing"))
+            items.Add("Test the affected functionality manually");
+
+        if (!string.IsNullOrWhiteSpace(preserveWhat))
+            items.Add($"Verify this still works: {preserveWhat}");
+
+        if (risk.Contains("High") || areas.Contains("Auth / Security"))
+            items.Add("Get a second review — this is a high-risk change");
+
+        if (areas.Contains("Database"))
+            items.Add("Back up data before running any migrations");
+
+        if (areas.Contains("Infra / DevOps"))
+            items.Add("Verify no secrets or environment variables are exposed");
+
+        if (reviewPlan.Contains("Get a colleague to review") && !risk.Contains("High"))
+            items.Add("Share the diff with a colleague for review");
+
+        if (reviewPlan.Contains("Haven't decided yet"))
+            items.Add("⚠ Decide your validation approach before applying the changes");
+
+        return items;
     }
 
     private static void AppendSection(System.Text.StringBuilder sb, string label, string? value)
