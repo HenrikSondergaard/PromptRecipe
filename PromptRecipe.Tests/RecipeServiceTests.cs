@@ -388,3 +388,318 @@ public class GetDiligenceItemsTests
         Assert.Contains(items, i => i.Contains("Decide your validation"));
     }
 }
+
+public class QuestionsTests
+{
+    [Fact]
+    public void Questions_ContainsExactlyFourteenQuestions()
+    {
+        Assert.Equal(14, RecipeService.Questions.Count);
+    }
+
+    [Fact]
+    public void Questions_AreInExpectedOrder()
+    {
+        var keys = RecipeService.Questions.Select(q => q.Key).ToArray();
+        var expected = new[]
+        {
+            QuestionKeys.TaskType,
+            QuestionKeys.Area,
+            QuestionKeys.TechStack,
+            QuestionKeys.RelevantFiles,
+            QuestionKeys.Constraints,
+            QuestionKeys.DoNotTouch,
+            QuestionKeys.AcceptanceCriteria,
+            QuestionKeys.OutputFormat,
+            QuestionKeys.PreserveWhat,
+            QuestionKeys.Verification,
+            QuestionKeys.Environment,
+            QuestionKeys.Milestones,
+            QuestionKeys.StopAndAsk,
+            QuestionKeys.ExtraContext
+        };
+        Assert.Equal(expected, keys);
+    }
+
+    [Fact]
+    public void NewQuestions_HaveExpectedTypes()
+    {
+        var byKey = RecipeService.Questions.ToDictionary(q => q.Key);
+        Assert.Equal(QuestionType.MultiSelectWithOther, byKey[QuestionKeys.DoNotTouch].Type);
+        Assert.Equal(QuestionType.FreeText, byKey[QuestionKeys.AcceptanceCriteria].Type);
+        Assert.Equal(QuestionType.MultiSelectWithOther, byKey[QuestionKeys.Verification].Type);
+        Assert.Equal(QuestionType.MultiSelectWithOther, byKey[QuestionKeys.Environment].Type);
+        Assert.Equal(QuestionType.FreeText, byKey[QuestionKeys.Milestones].Type);
+        Assert.Equal(QuestionType.SingleChoice, byKey[QuestionKeys.StopAndAsk].Type);
+    }
+}
+
+public class NewAgenticOptionsTests
+{
+    private static readonly RecipeService Svc = new();
+
+    [Fact]
+    public void DoNotTouch_NoArea_ReturnsFourGeneralOptions()
+    {
+        var options = Svc.GetOptionsFor(QuestionKeys.DoNotTouch, new Dictionary<string, string>());
+        Assert.Equal(4, options.Count);
+        Assert.Contains("Files outside the task's scope", options);
+        Assert.Contains("CI/CD workflow files", options);
+        Assert.Contains("Config / secrets / environment files", options);
+        Assert.Contains("Database schema / migrations", options);
+    }
+
+    [Fact]
+    public void DoNotTouch_BackendArea_AddsAreaOptionsWithoutDuplicates()
+    {
+        var answers = new Dictionary<string, string>
+        {
+            [QuestionKeys.Area] = "Backend / API"
+        };
+        var options = Svc.GetOptionsFor(QuestionKeys.DoNotTouch, answers);
+        Assert.Contains("Public API contracts", options);
+        Assert.Contains("Auth logic", options);
+        Assert.Equal(options.Count, options.Distinct().Count());
+    }
+
+    [Fact]
+    public void DoNotTouch_DatabaseAndInfra_AddsBothAreas()
+    {
+        var answers = new Dictionary<string, string>
+        {
+            [QuestionKeys.Area] = "Database||Infra / DevOps"
+        };
+        var options = Svc.GetOptionsFor(QuestionKeys.DoNotTouch, answers);
+        Assert.Contains("Schema / migrations", options);
+        Assert.Contains("CI/CD pipelines", options);
+        Assert.Equal(options.Count, options.Distinct().Count());
+    }
+
+    [Fact]
+    public void Verification_NoArea_ReturnsFourGeneralOptions()
+    {
+        var options = Svc.GetOptionsFor(QuestionKeys.Verification, new Dictionary<string, string>());
+        Assert.Equal(4, options.Count);
+        Assert.Contains("Run the existing test suite", options);
+        Assert.Contains("Write new tests for the change", options);
+        Assert.Contains("Project must build without errors/warnings", options);
+        Assert.Contains("Run linter / formatter", options);
+    }
+
+    [Fact]
+    public void Verification_TestingArea_AddsAreaOptionsWithoutDuplicates()
+    {
+        var answers = new Dictionary<string, string>
+        {
+            [QuestionKeys.Area] = "Testing / QA"
+        };
+        var options = Svc.GetOptionsFor(QuestionKeys.Verification, answers);
+        Assert.Contains("All existing tests still pass", options);
+        Assert.Equal(options.Count, options.Distinct().Count());
+    }
+
+    [Fact]
+    public void Verification_FrontendArea_AddsBrowserCheck()
+    {
+        var answers = new Dictionary<string, string>
+        {
+            [QuestionKeys.Area] = "Frontend / UI"
+        };
+        var options = Svc.GetOptionsFor(QuestionKeys.Verification, answers);
+        Assert.Contains("Manual check in the browser", options);
+    }
+}
+
+public class NewAgenticCartSectionTests
+{
+    private static readonly RecipeService Svc = new();
+
+    private static Dictionary<string, string> MinimalAnswers() => new()
+    {
+        [QuestionKeys.TaskType] = "New feature",
+        [QuestionKeys.Area] = "Frontend / UI",
+        [QuestionKeys.WhatToDo] = "Add a login page",
+        [QuestionKeys.OutputFormat] = "Code + brief explanation"
+    };
+
+    [Fact]
+    public void EmptyNewAnswers_NoNewSections()
+    {
+        var cart = Svc.AssembleCart(MinimalAnswers());
+        Assert.DoesNotContain("Do not touch:", cart);
+        Assert.DoesNotContain("Acceptance criteria:", cart);
+        Assert.DoesNotContain("Verification:", cart);
+        Assert.DoesNotContain("Environment requirements:", cart);
+        Assert.DoesNotContain("Milestones (in order):", cart);
+        Assert.DoesNotContain("Stop and ask when:", cart);
+    }
+
+    [Fact]
+    public void DoNotTouch_IncludedWithExactLabel()
+    {
+        var answers = MinimalAnswers();
+        answers[QuestionKeys.DoNotTouch] = "CI/CD workflow files||Config / secrets / environment files";
+        var cart = Svc.AssembleCart(answers);
+        Assert.Contains("Do not touch: CI/CD workflow files, Config / secrets / environment files", cart);
+    }
+
+    [Fact]
+    public void AcceptanceCriteria_IncludedWithExactLabel()
+    {
+        var answers = MinimalAnswers();
+        answers[QuestionKeys.AcceptanceCriteria] = "Login page renders\nTests pass";
+        var cart = Svc.AssembleCart(answers);
+        Assert.Contains("Acceptance criteria:", cart);
+        Assert.Contains("Login page renders", cart);
+    }
+
+    [Fact]
+    public void Verification_IncludedWithExactLabel()
+    {
+        var answers = MinimalAnswers();
+        answers[QuestionKeys.Verification] = "Run the existing test suite||Run linter / formatter";
+        var cart = Svc.AssembleCart(answers);
+        Assert.Contains("Verification: Run the existing test suite, Run linter / formatter", cart);
+    }
+
+    [Fact]
+    public void Environment_IncludedWithExactLabel()
+    {
+        var answers = MinimalAnswers();
+        answers[QuestionKeys.Environment] = "Create a feature branch first";
+        var cart = Svc.AssembleCart(answers);
+        Assert.Contains("Environment requirements: Create a feature branch first", cart);
+    }
+
+    [Fact]
+    public void Milestones_IncludedWithExactLabel()
+    {
+        var answers = MinimalAnswers();
+        answers[QuestionKeys.Milestones] = "1. Scaffold 2. Style 3. Wire up";
+        var cart = Svc.AssembleCart(answers);
+        Assert.Contains("Milestones (in order): 1. Scaffold 2. Style 3. Wire up", cart);
+    }
+
+    [Fact]
+    public void StopAndAsk_IncludedWithExactLabel()
+    {
+        var answers = MinimalAnswers();
+        answers[QuestionKeys.StopAndAsk] = "Before committing / pushing";
+        var cart = Svc.AssembleCart(answers);
+        Assert.Contains("Stop and ask when: Before committing / pushing", cart);
+    }
+}
+
+public class NewAgenticDiscernmentTests
+{
+    private static readonly RecipeService Svc = new();
+
+    [Fact]
+    public void AcceptanceCriteria_OneItemPerLine()
+    {
+        var answers = new Dictionary<string, string>
+        {
+            [QuestionKeys.AcceptanceCriteria] = "Login page renders\nRedirect works\n\nTests pass"
+        };
+        var items = Svc.GetDiscernmentItems(answers);
+        Assert.Contains("Verify criterion: Login page renders", items);
+        Assert.Contains("Verify criterion: Redirect works", items);
+        Assert.Contains("Verify criterion: Tests pass", items);
+        Assert.Equal(3, items.Count(i => i.StartsWith("Verify criterion:", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public void DoNotTouch_OneItemPerChoice()
+    {
+        var answers = new Dictionary<string, string>
+        {
+            [QuestionKeys.DoNotTouch] = "CI/CD workflow files||Database schema / migrations"
+        };
+        var items = Svc.GetDiscernmentItems(answers);
+        Assert.Contains("Confirm CI/CD workflow files were not modified", items);
+        Assert.Contains("Confirm Database schema / migrations were not modified", items);
+    }
+
+    [Fact]
+    public void StopAndAsk_AddsPauseItem()
+    {
+        var answers = new Dictionary<string, string>
+        {
+            [QuestionKeys.StopAndAsk] = "Before any destructive operation (deletes, migrations, force-push)"
+        };
+        var items = Svc.GetDiscernmentItems(answers);
+        Assert.Contains("Agent should pause and ask when: Before any destructive operation (deletes, migrations, force-push)", items);
+    }
+
+    [Fact]
+    public void NoNewAnswers_OnlyExistingItems()
+    {
+        var items = Svc.GetDiscernmentItems(new Dictionary<string, string>());
+        Assert.DoesNotContain(items, i => i.StartsWith("Verify criterion:", StringComparison.Ordinal));
+        Assert.DoesNotContain(items, i => i.StartsWith("Confirm ", StringComparison.Ordinal));
+        Assert.DoesNotContain(items, i => i.StartsWith("Agent should pause", StringComparison.Ordinal));
+    }
+}
+
+public class NewAgenticDiligenceTests
+{
+    private static readonly RecipeService Svc = new();
+
+    [Fact]
+    public void RunExistingTestSuite_AddsFullTestSuite_EvenForNewFeature()
+    {
+        var recipe = new Dictionary<string, string>
+        {
+            [QuestionKeys.TaskType] = "New feature",
+            [QuestionKeys.Verification] = "Run the existing test suite"
+        };
+        var items = Svc.GetDiligenceItems(recipe, new Dictionary<string, string>());
+        Assert.Contains("Run the full test suite", items);
+    }
+
+    [Fact]
+    public void WriteNewTests_AddsCoverageItem()
+    {
+        var recipe = new Dictionary<string, string>
+        {
+            [QuestionKeys.TaskType] = "New feature",
+            [QuestionKeys.Verification] = "Write new tests for the change"
+        };
+        var items = Svc.GetDiligenceItems(recipe, new Dictionary<string, string>());
+        Assert.Contains("Verify the new tests cover the change", items);
+    }
+
+    [Fact]
+    public void OtherVerificationChoices_AddVerifyItems()
+    {
+        var recipe = new Dictionary<string, string>
+        {
+            [QuestionKeys.TaskType] = "New feature",
+            [QuestionKeys.Verification] = "Project must build without errors/warnings||Run linter / formatter"
+        };
+        var items = Svc.GetDiligenceItems(recipe, new Dictionary<string, string>());
+        Assert.Contains("Verify: Project must build without errors/warnings", items);
+        Assert.Contains("Verify: Run linter / formatter", items);
+    }
+
+    [Fact]
+    public void RunExistingTestSuite_DoesNotAlsoAddVerifyItem()
+    {
+        var recipe = new Dictionary<string, string>
+        {
+            [QuestionKeys.TaskType] = "New feature",
+            [QuestionKeys.Verification] = "Run the existing test suite"
+        };
+        var items = Svc.GetDiligenceItems(recipe, new Dictionary<string, string>());
+        Assert.DoesNotContain(items, i => i.StartsWith("Verify: Run the existing test suite", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void NoVerification_NoNewItems()
+    {
+        var recipe = new Dictionary<string, string> { [QuestionKeys.TaskType] = "Explain code" };
+        var items = Svc.GetDiligenceItems(recipe, new Dictionary<string, string>());
+        Assert.DoesNotContain("Run the full test suite", items);
+        Assert.DoesNotContain(items, i => i.StartsWith("Verify: ", StringComparison.Ordinal));
+    }
+}
