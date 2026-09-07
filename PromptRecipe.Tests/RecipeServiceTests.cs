@@ -785,6 +785,63 @@ public class NewAgenticDiscernmentTests
     }
 }
 
+public class OtherPrefixStripTests
+{
+    private static readonly RecipeService Svc = new();
+
+    [Fact]
+    public void StripOtherPrefix_RemovesPrefix()
+    {
+        Assert.Equal("my-secret-folder", RecipeService.StripOtherPrefix("Other: my-secret-folder"));
+    }
+
+    [Fact]
+    public void StripOtherPrefix_LeavesPlainValuesUntouched()
+    {
+        Assert.Equal("Schema / migration files", RecipeService.StripOtherPrefix("Schema / migration files"));
+        Assert.Equal(string.Empty, RecipeService.StripOtherPrefix(null));
+    }
+
+    [Fact]
+    public void DoNotTouch_CustomValue_DoesNotLeakPrefix()
+    {
+        var answers = new Dictionary<string, string>
+        {
+            [QuestionKeys.DoNotTouch] = "Config / secrets / environment files||Other: my-secret-folder"
+        };
+        var items = Svc.GetDiscernmentItems(answers);
+        Assert.Contains("Confirm this was not modified: my-secret-folder", items);
+        Assert.DoesNotContain(items, i => i.Contains("Other:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Constraints_CustomValue_DoesNotLeakPrefix()
+    {
+        var answers = new Dictionary<string, string>
+        {
+            [QuestionKeys.Constraints] = "Don't modify existing tests||Other: my-lint-rule"
+        };
+        var items = Svc.GetDiscernmentItems(answers);
+        Assert.Contains("Constraint respected: \"my-lint-rule\"", items);
+        Assert.DoesNotContain(items, i => i.Contains("Other:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Diligence_CustomVerificationAndEnvironment_DoNotLeakPrefix()
+    {
+        var recipe = new Dictionary<string, string>
+        {
+            [QuestionKeys.TaskType] = "New feature",
+            [QuestionKeys.Verification] = "Other: curl the new endpoint",
+            [QuestionKeys.Environment] = "Other: run on arm64 only"
+        };
+        var items = Svc.GetDiligenceItems(recipe, new Dictionary<string, string>());
+        Assert.Contains("Verify: curl the new endpoint", items);
+        Assert.Contains("Confirm: run on arm64 only", items);
+        Assert.DoesNotContain(items, i => i.Contains("Other:", StringComparison.Ordinal));
+    }
+}
+
 public class NewAgenticDiligenceTests
 {
     private static readonly RecipeService Svc = new();
