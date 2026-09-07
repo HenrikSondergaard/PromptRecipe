@@ -463,16 +463,21 @@ public class NewAgenticOptionsTests
     }
 
     [Fact]
-    public void DoNotTouch_DatabaseAndInfra_AddsBothAreas()
+    public void DoNotTouch_DatabaseAndInfra_ReturnsGeneralOptionsOnly()
     {
         var answers = new Dictionary<string, string>
         {
             [QuestionKeys.Area] = "Database||Infra / DevOps"
         };
         var options = Svc.GetOptionsFor(QuestionKeys.DoNotTouch, answers);
-        Assert.Contains("Schema / migrations", options);
-        Assert.Contains("CI/CD pipelines", options);
-        Assert.Equal(options.Count, options.Distinct().Count());
+        var expected = new[]
+        {
+            "Files outside the task's scope",
+            "CI/CD workflow files",
+            "Config / secrets / environment files",
+            "Database schema / migrations"
+        };
+        Assert.Equal(expected, options);
     }
 
     [Fact]
