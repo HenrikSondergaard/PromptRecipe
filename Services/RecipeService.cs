@@ -39,6 +39,22 @@ public class RecipeService
             QuestionType.MultiSelectWithOther,
             Array.Empty<string>()),
 
+        new(QuestionKeys.DoNotTouch,
+            "Which files, folders or systems must the agent NOT modify?",
+            QuestionType.MultiSelectWithOther,
+            new[]
+            {
+                "Files outside the task's scope",
+                "CI/CD workflow files",
+                "Config / secrets / environment files",
+                "Database schema / migrations"
+            }),
+
+        new(QuestionKeys.AcceptanceCriteria,
+            "When is this task done? List the acceptance criteria.",
+            QuestionType.FreeText,
+            Array.Empty<string>()),
+
         new(QuestionKeys.OutputFormat,
             "How should the agent present its work?",
             QuestionType.SingleChoice,
@@ -54,6 +70,44 @@ public class RecipeService
             "What existing behaviour must NOT break?",
             QuestionType.FreeText,
             Array.Empty<string>()),
+
+        new(QuestionKeys.Verification,
+            "How should the agent verify its own work?",
+            QuestionType.MultiSelectWithOther,
+            new[]
+            {
+                "Run the existing test suite",
+                "Write new tests for the change",
+                "Project must build without errors/warnings",
+                "Run linter / formatter"
+            }),
+
+        new(QuestionKeys.Environment,
+            "Any tool, command or environment requirements?",
+            QuestionType.MultiSelectWithOther,
+            new[]
+            {
+                "Create a feature branch first",
+                "Use the project's existing lint/format commands",
+                "Never install new dependencies without asking",
+                "Don't touch the main branch"
+            }),
+
+        new(QuestionKeys.Milestones,
+            "Long task? Which sub-goals should the agent deliver, in order?",
+            QuestionType.FreeText,
+            Array.Empty<string>()),
+
+        new(QuestionKeys.StopAndAsk,
+            "When should the agent pause and ask you instead of guessing?",
+            QuestionType.SingleChoice,
+            new[]
+            {
+                "If requirements are ambiguous",
+                "Before any destructive operation (deletes, migrations, force-push)",
+                "Before committing / pushing",
+                "Never — make reasonable assumptions and document them"
+            }),
 
         new(QuestionKeys.ExtraContext,
             "Anything else the agent should know? (optional)",
@@ -95,12 +149,46 @@ public class RecipeService
         ["Documentation"] = new[] { "Don't change document structure / headings", "Don't modify existing code examples", "Don't change tone or style" }
     };
 
+    private static readonly string[] GeneralDoNotTouch =
+    {
+        "Files outside the task's scope",
+        "CI/CD workflow files",
+        "Config / secrets / environment files",
+        "Database schema / migrations"
+    };
+
+    private static readonly string[] GeneralVerification =
+    {
+        "Run the existing test suite",
+        "Write new tests for the change",
+        "Project must build without errors/warnings",
+        "Run linter / formatter"
+    };
+
+    private static readonly Dictionary<string, string[]> DoNotTouchByArea = new()
+    {
+        ["Frontend / UI"] = new[] { "UI design / styling" },
+        ["Backend / API"] = new[] { "Public API contracts", "Auth logic" },
+        ["Database"] = new[] { "Schema / migrations" },
+        ["Infra / DevOps"] = new[] { "CI/CD pipelines" }
+    };
+
+    private static readonly Dictionary<string, string[]> VerificationByArea = new()
+    {
+        ["Frontend / UI"] = new[] { "Manual check in the browser" },
+        ["Backend / API"] = new[] { "Endpoints return expected responses" },
+        ["Testing / QA"] = new[] { "All existing tests still pass" },
+        ["Documentation"] = new[] { "Examples compile / are accurate" }
+    };
+
     public IReadOnlyList<string> GetOptionsFor(string key, Dictionary<string, string> currentAnswers)
     {
         return key switch
         {
             QuestionKeys.TechStack => GetTechOptions(currentAnswers),
             QuestionKeys.Constraints => GetConstraintOptions(currentAnswers),
+            QuestionKeys.DoNotTouch => GetCombinedOptions(GeneralDoNotTouch, DoNotTouchByArea, currentAnswers),
+            QuestionKeys.Verification => GetCombinedOptions(GeneralVerification, VerificationByArea, currentAnswers),
             _ => Questions.FirstOrDefault(q => q.Key == key)?.BaseOptions ?? Array.Empty<string>()
         };
     }
@@ -131,8 +219,14 @@ public class RecipeService
         AppendSection(sb, "Tech stack", FormatMultiSelect(answers.GetValueOrDefault(QuestionKeys.TechStack)));
         AppendSection(sb, "Relevant files", answers.GetValueOrDefault(QuestionKeys.RelevantFiles));
         AppendSection(sb, "Constraints (do NOT)", FormatMultiSelect(answers.GetValueOrDefault(QuestionKeys.Constraints)));
+        AppendSection(sb, "Do not touch", FormatMultiSelect(answers.GetValueOrDefault(QuestionKeys.DoNotTouch)));
+        AppendSection(sb, "Acceptance criteria", answers.GetValueOrDefault(QuestionKeys.AcceptanceCriteria));
         AppendSection(sb, "Output format", answers.GetValueOrDefault(QuestionKeys.OutputFormat));
         AppendSection(sb, "Must not break", answers.GetValueOrDefault(QuestionKeys.PreserveWhat));
+        AppendSection(sb, "Verification", FormatMultiSelect(answers.GetValueOrDefault(QuestionKeys.Verification)));
+        AppendSection(sb, "Environment requirements", FormatMultiSelect(answers.GetValueOrDefault(QuestionKeys.Environment)));
+        AppendSection(sb, "Milestones (in order)", answers.GetValueOrDefault(QuestionKeys.Milestones));
+        AppendSection(sb, "Stop and ask when", answers.GetValueOrDefault(QuestionKeys.StopAndAsk));
         AppendSection(sb, "Extra context", answers.GetValueOrDefault(QuestionKeys.ExtraContext));
 
         sb.AppendLine();
@@ -151,6 +245,9 @@ public class RecipeService
         var areas = ParseMultiSelect(answers.GetValueOrDefault(QuestionKeys.Area, ""));
         var constraints = ParseMultiSelect(answers.GetValueOrDefault(QuestionKeys.Constraints, ""));
         var preserveWhat = answers.GetValueOrDefault(QuestionKeys.PreserveWhat, "");
+        var doNotTouch = ParseMultiSelect(answers.GetValueOrDefault(QuestionKeys.DoNotTouch, ""));
+        var acceptanceCriteria = answers.GetValueOrDefault(QuestionKeys.AcceptanceCriteria, "");
+        var stopAndAsk = answers.GetValueOrDefault(QuestionKeys.StopAndAsk, "");
 
         items.Add("Verify the output matches what you asked for");
 
@@ -178,6 +275,15 @@ public class RecipeService
         if (!string.IsNullOrWhiteSpace(preserveWhat))
             items.Add($"Verify this still works: {preserveWhat}");
 
+        foreach (var criterion in SplitLines(acceptanceCriteria))
+            items.Add($"Verify criterion: {criterion}");
+
+        foreach (var choice in doNotTouch.Where(choice => !string.IsNullOrWhiteSpace(choice)))
+            items.Add($"Confirm {choice} were not modified");
+
+        if (!string.IsNullOrWhiteSpace(stopAndAsk))
+            items.Add($"Agent should pause and ask when: {stopAndAsk}");
+
         return items;
     }
 
@@ -189,12 +295,14 @@ public class RecipeService
         var taskType = recipeAnswers.GetValueOrDefault(QuestionKeys.TaskType, "");
         var areas = ParseMultiSelect(recipeAnswers.GetValueOrDefault(QuestionKeys.Area, ""));
         var preserveWhat = recipeAnswers.GetValueOrDefault(QuestionKeys.PreserveWhat, "");
+        var verification = ParseMultiSelect(recipeAnswers.GetValueOrDefault(QuestionKeys.Verification, ""));
         var risk = delegationAnswers.GetValueOrDefault(DelegationKeys.Risk, "");
         var reviewPlan = ParseMultiSelect(delegationAnswers.GetValueOrDefault(DelegationKeys.ReviewPlan, ""));
 
         items.Add("Review the complete code diff before applying");
 
         if (reviewPlan.Contains("Run the test suite")
+            || verification.Contains("Run the existing test suite")
             || taskType is "Bug fix" or "Refactor / Clean up" or "Write tests")
             items.Add("Run the full test suite");
 
@@ -219,13 +327,43 @@ public class RecipeService
         if (reviewPlan.Contains("Haven't decided yet"))
             items.Add("⚠ Decide your validation approach before applying the changes");
 
+        if (verification.Contains("Write new tests for the change"))
+            items.Add("Verify the new tests cover the change");
+
+        foreach (var choice in verification.Where(choice =>
+                     !string.IsNullOrWhiteSpace(choice)
+                     && choice != "Run the existing test suite"
+                     && choice != "Write new tests for the change"))
+            items.Add($"Verify: {choice}");
+
         return items;
     }
 
     private static void AppendSection(System.Text.StringBuilder sb, string label, string? value)
     {
-        if (!string.IsNullOrWhiteSpace(value))
-            sb.AppendLine($"{label}: {value}");
+        if (string.IsNullOrWhiteSpace(value)) return;
+
+        var lines = SplitLines(value);
+        if (lines.Count == 0) return;
+
+        if (lines.Count == 1)
+        {
+            sb.AppendLine($"{label}: {lines[0]}");
+            return;
+        }
+
+        sb.AppendLine($"{label}:");
+        foreach (var line in lines)
+            sb.AppendLine($"  - {line}");
+    }
+
+    private static List<string> SplitLines(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return new List<string>();
+        return value.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Trim())
+                    .Where(s => s.Length > 0)
+                    .ToList();
     }
 
     private IReadOnlyList<string> GetTechOptions(Dictionary<string, string> answers)
@@ -247,6 +385,20 @@ public class RecipeService
             if (ConstraintsByArea.TryGetValue(area, out var constraints))
                 foreach (var c in constraints)
                     if (!options.Contains(c)) options.Add(c);
+        return options;
+    }
+
+    private static IReadOnlyList<string> GetCombinedOptions(
+        string[] generalOptions,
+        Dictionary<string, string[]> optionsByArea,
+        Dictionary<string, string> answers)
+    {
+        var areas = ParseMultiSelect(answers.GetValueOrDefault(QuestionKeys.Area, ""));
+        var options = new List<string>(generalOptions);
+        foreach (var area in areas)
+            if (optionsByArea.TryGetValue(area, out var areaOptions))
+                foreach (var o in areaOptions)
+                    if (!options.Contains(o)) options.Add(o);
         return options;
     }
 
