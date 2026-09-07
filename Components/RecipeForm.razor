@@ -46,6 +46,15 @@
                                 }
                             </label>
                         }
+                        @if (!RecipeService.IsRequired(question.Key)
+                             && !string.IsNullOrEmpty(GetAnswer(question.Key)))
+                        {
+                            <button type="button"
+                                    class="btn-secondary btn-clear-selection"
+                                    @onclick="() => SetAnswer(question.Key, string.Empty)">
+                                Clear selection
+                            </button>
+                        }
                     </div>
                 }
                 else if (question.Type == QuestionType.MultiSelectWithOther
@@ -141,14 +150,8 @@
         _answers[key] = RecipeService.JoinMultiSelect(current);
     }
 
-    private bool IsValid()
-    {
-        if (string.IsNullOrWhiteSpace(GetAnswer(QuestionKeys.TaskType)))     return false;
-        if (string.IsNullOrWhiteSpace(GetAnswer(QuestionKeys.Area)))         return false;
-        if (string.IsNullOrWhiteSpace(GetAnswer(QuestionKeys.WhatToDo)))     return false;
-        if (string.IsNullOrWhiteSpace(GetAnswer(QuestionKeys.OutputFormat))) return false;
-        return true;
-    }
+    private bool IsValid() =>
+        RecipeService.RequiredKeys.All(key => !string.IsNullOrWhiteSpace(GetAnswer(key)));
 
     private async Task HandleSubmit()
     {

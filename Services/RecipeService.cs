@@ -105,6 +105,16 @@ public class RecipeService
             Array.Empty<string>())
     };
 
+    public static readonly IReadOnlyList<string> RequiredKeys = new[]
+    {
+        QuestionKeys.TaskType,
+        QuestionKeys.Area,
+        QuestionKeys.WhatToDo,
+        QuestionKeys.OutputFormat
+    };
+
+    public static bool IsRequired(string key) => RequiredKeys.Contains(key);
+
     private static readonly Dictionary<string, string[]> TechByArea = new()
     {
         ["Frontend / UI"] = new[] { "React", "Next.js", "Vue", "Angular", "Svelte", "Blazor", "HTML / CSS", "TypeScript", "JavaScript", "Tailwind CSS" },
