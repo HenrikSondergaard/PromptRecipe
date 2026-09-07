@@ -548,9 +548,27 @@ public class NewAgenticCartSectionTests
     {
         var answers = MinimalAnswers();
         answers[QuestionKeys.AcceptanceCriteria] = "Login page renders\nTests pass";
-        var cart = Svc.AssembleCart(answers);
-        Assert.Contains("Acceptance criteria:", cart);
-        Assert.Contains("Login page renders", cart);
+        var cart = Svc.AssembleCart(answers).Replace("\r\n", "\n");
+        Assert.Contains("Acceptance criteria:\n  - Login page renders\n  - Tests pass", cart);
+    }
+
+    [Fact]
+    public void Milestones_MultiLineRenderedAsBulletBlock()
+    {
+        var answers = MinimalAnswers();
+        answers[QuestionKeys.Milestones] = "Scaffold\nStyle";
+        var cart = Svc.AssembleCart(answers).Replace("\r\n", "\n");
+        Assert.Contains("Milestones (in order):\n  - Scaffold\n  - Style", cart);
+    }
+
+    [Fact]
+    public void AppendSection_SingleLineKeepsInlineLabel()
+    {
+        var answers = MinimalAnswers();
+        answers[QuestionKeys.AcceptanceCriteria] = "Tests pass";
+        var cart = Svc.AssembleCart(answers).Replace("\r\n", "\n");
+        Assert.Contains("Acceptance criteria: Tests pass", cart);
+        Assert.DoesNotContain("Acceptance criteria:\n", cart);
     }
 
     [Fact]

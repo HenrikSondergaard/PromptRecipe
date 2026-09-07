@@ -341,8 +341,20 @@ public class RecipeService
 
     private static void AppendSection(System.Text.StringBuilder sb, string label, string? value)
     {
-        if (!string.IsNullOrWhiteSpace(value))
-            sb.AppendLine($"{label}: {value}");
+        if (string.IsNullOrWhiteSpace(value)) return;
+
+        var lines = SplitLines(value);
+        if (lines.Count == 0) return;
+
+        if (lines.Count == 1)
+        {
+            sb.AppendLine($"{label}: {lines[0]}");
+            return;
+        }
+
+        sb.AppendLine($"{label}:");
+        foreach (var line in lines)
+            sb.AppendLine($"  - {line}");
     }
 
     private static List<string> SplitLines(string? value)
