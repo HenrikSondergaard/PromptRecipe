@@ -168,9 +168,7 @@ public class RecipeService
     private static readonly Dictionary<string, string[]> DoNotTouchByArea = new()
     {
         ["Frontend / UI"] = new[] { "UI design / styling" },
-        ["Backend / API"] = new[] { "Public API contracts", "Auth logic" },
-        ["Database"] = new[] { "Schema / migrations" },
-        ["Infra / DevOps"] = new[] { "CI/CD pipelines" }
+        ["Backend / API"] = new[] { "Public API contracts", "Auth logic" }
     };
 
     private static readonly Dictionary<string, string[]> VerificationByArea = new()
