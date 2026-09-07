@@ -5,6 +5,8 @@ namespace PromptRecipe.Services;
 public class RecipeService
 {
     private const string MultiSelectSeparator = "||";
+    private const string RunExistingTestsOption = "Run the existing test suite";
+    private const string WriteNewTestsOption = "Write new tests for the change";
 
     public static readonly IReadOnlyList<RecipeQuestion> Questions = new List<RecipeQuestion>
     {
@@ -42,13 +44,7 @@ public class RecipeService
         new(QuestionKeys.DoNotTouch,
             "Which files, folders or systems must the agent NOT modify?",
             QuestionType.MultiSelectWithOther,
-            new[]
-            {
-                "Files outside the task's scope",
-                "CI/CD workflow files",
-                "Config / secrets / environment files",
-                "Database schema / migrations"
-            }),
+            Array.Empty<string>()),
 
         new(QuestionKeys.AcceptanceCriteria,
             "When is this task done? List the acceptance criteria.",
@@ -74,13 +70,7 @@ public class RecipeService
         new(QuestionKeys.Verification,
             "How should the agent verify its own work?",
             QuestionType.MultiSelectWithOther,
-            new[]
-            {
-                "Run the existing test suite",
-                "Write new tests for the change",
-                "Project must build without errors/warnings",
-                "Run linter / formatter"
-            }),
+            Array.Empty<string>()),
 
         new(QuestionKeys.Environment,
             "Any tool, command or environment requirements?",
@@ -152,39 +142,49 @@ public class RecipeService
     private static readonly string[] GeneralDoNotTouch =
     {
         "Files outside the task's scope",
-        "CI/CD workflow files",
+        "CI/CD workflow files (.github/)",
         "Config / secrets / environment files",
-        "Database schema / migrations"
+        "Schema / migration files"
     };
 
     private static readonly string[] GeneralVerification =
     {
-        "Run the existing test suite",
-        "Write new tests for the change",
+        RunExistingTestsOption,
+        WriteNewTestsOption,
         "Project must build without errors/warnings",
         "Run linter / formatter"
     };
 
     private static readonly Dictionary<string, string[]> DoNotTouchByArea = new()
     {
-        ["Frontend / UI"] = new[] { "UI design / styling" },
-        ["Backend / API"] = new[] { "Public API contracts", "Auth logic" }
+        ["Frontend / UI"] = new[] { "UI style files (CSS / theme)" },
+        ["Backend / API"] = new[] { "Public API surface files (controllers / DTOs)", "Auth source files" },
+        ["Auth / Security"] = new[] { "Auth source files", "Token / secret files" },
+        ["Testing / QA"] = new[] { "Existing test files", "Test helpers / fixtures" },
+        ["Mobile"] = new[] { "Platform-specific source files", "App permissions / manifests" },
+        ["CLI / Scripts"] = new[] { "Argument / flag interfaces", "Existing output format" },
+        ["Documentation"] = new[] { "Document structure / headings", "Code examples in docs" }
     };
 
     private static readonly Dictionary<string, string[]> VerificationByArea = new()
     {
         ["Frontend / UI"] = new[] { "Manual check in the browser" },
         ["Backend / API"] = new[] { "Endpoints return expected responses" },
+        ["Database"] = new[] { "Migrations are reversible", "No data loss on existing tables" },
+        ["Auth / Security"] = new[] { "No secrets committed", "Login / permission flows tested" },
+        ["Infra / DevOps"] = new[] { "No secrets in workflow logs", "Pipeline passes on a clean checkout" },
         ["Testing / QA"] = new[] { "All existing tests still pass" },
-        ["Documentation"] = new[] { "Examples compile / are accurate" }
+        ["Documentation"] = new[] { "Examples compile / are accurate" },
+        ["Mobile"] = new[] { "App builds for both platforms", "Navigation flows still work" },
+        ["CLI / Scripts"] = new[] { "Script exits non-zero on failure", "Works after a clean checkout" }
     };
 
     public IReadOnlyList<string> GetOptionsFor(string key, Dictionary<string, string> currentAnswers)
     {
         return key switch
         {
-            QuestionKeys.TechStack => GetTechOptions(currentAnswers),
-            QuestionKeys.Constraints => GetConstraintOptions(currentAnswers),
+            QuestionKeys.TechStack => GetCombinedOptions(Array.Empty<string>(), TechByArea, currentAnswers),
+            QuestionKeys.Constraints => GetCombinedOptions(GeneralConstraints, ConstraintsByArea, currentAnswers),
             QuestionKeys.DoNotTouch => GetCombinedOptions(GeneralDoNotTouch, DoNotTouchByArea, currentAnswers),
             QuestionKeys.Verification => GetCombinedOptions(GeneralVerification, VerificationByArea, currentAnswers),
             _ => Questions.FirstOrDefault(q => q.Key == key)?.BaseOptions ?? Array.Empty<string>()
@@ -244,8 +244,9 @@ public class RecipeService
         var constraints = ParseMultiSelect(answers.GetValueOrDefault(QuestionKeys.Constraints, ""));
         var preserveWhat = answers.GetValueOrDefault(QuestionKeys.PreserveWhat, "");
         var doNotTouch = ParseMultiSelect(answers.GetValueOrDefault(QuestionKeys.DoNotTouch, ""));
-        var acceptanceCriteria = answers.GetValueOrDefault(QuestionKeys.AcceptanceCriteria, "");
+        var acceptanceCriteria = SplitLines(answers.GetValueOrDefault(QuestionKeys.AcceptanceCriteria, ""));
         var stopAndAsk = answers.GetValueOrDefault(QuestionKeys.StopAndAsk, "");
+        var milestones = SplitLines(answers.GetValueOrDefault(QuestionKeys.Milestones, ""));
 
         items.Add("Verify the output matches what you asked for");
 
@@ -273,11 +274,14 @@ public class RecipeService
         if (!string.IsNullOrWhiteSpace(preserveWhat))
             items.Add($"Verify this still works: {preserveWhat}");
 
-        foreach (var criterion in SplitLines(acceptanceCriteria))
-            items.Add($"Verify criterion: {criterion}");
+        if (acceptanceCriteria.Count > 0)
+            items.Add("Verify every acceptance criterion listed in the cart above");
 
         foreach (var choice in doNotTouch.Where(choice => !string.IsNullOrWhiteSpace(choice)))
             items.Add($"Confirm this was not modified: {choice}");
+
+        foreach (var milestone in milestones)
+            items.Add($"Confirm milestone delivered (in order): {milestone}");
 
         if (!string.IsNullOrWhiteSpace(stopAndAsk))
             items.Add($"Agent should pause and ask when: {stopAndAsk}");
@@ -294,13 +298,14 @@ public class RecipeService
         var areas = ParseMultiSelect(recipeAnswers.GetValueOrDefault(QuestionKeys.Area, ""));
         var preserveWhat = recipeAnswers.GetValueOrDefault(QuestionKeys.PreserveWhat, "");
         var verification = ParseMultiSelect(recipeAnswers.GetValueOrDefault(QuestionKeys.Verification, ""));
+        var environment = ParseMultiSelect(recipeAnswers.GetValueOrDefault(QuestionKeys.Environment, ""));
         var risk = delegationAnswers.GetValueOrDefault(DelegationKeys.Risk, "");
         var reviewPlan = ParseMultiSelect(delegationAnswers.GetValueOrDefault(DelegationKeys.ReviewPlan, ""));
 
         items.Add("Review the complete code diff before applying");
 
         if (reviewPlan.Contains("Run the test suite")
-            || verification.Contains("Run the existing test suite")
+            || verification.Contains(RunExistingTestsOption)
             || taskType is "Bug fix" or "Refactor / Clean up" or "Write tests")
             items.Add("Run the full test suite");
 
@@ -325,14 +330,35 @@ public class RecipeService
         if (reviewPlan.Contains("Haven't decided yet"))
             items.Add("⚠ Decide your validation approach before applying the changes");
 
-        if (verification.Contains("Write new tests for the change"))
+        if (verification.Contains(WriteNewTestsOption))
             items.Add("Verify the new tests cover the change");
 
         foreach (var choice in verification.Where(choice =>
                      !string.IsNullOrWhiteSpace(choice)
-                     && choice != "Run the existing test suite"
-                     && choice != "Write new tests for the change"))
+                     && choice != RunExistingTestsOption
+                     && choice != WriteNewTestsOption))
             items.Add($"Verify: {choice}");
+
+        foreach (var choice in environment)
+        {
+            if (string.IsNullOrWhiteSpace(choice)) continue;
+
+            switch (choice)
+            {
+                case "Don't touch the main branch":
+                    items.Add("Confirm nothing was committed or pushed to the main branch");
+                    break;
+                case "Create a feature branch first":
+                    items.Add("Confirm work happened on a feature branch, not main");
+                    break;
+                case "Never install new dependencies without asking":
+                    items.Add("Confirm no new dependencies were added without asking");
+                    break;
+                default:
+                    items.Add($"Confirm: {choice}");
+                    break;
+            }
+        }
 
         return items;
     }
@@ -355,35 +381,16 @@ public class RecipeService
             sb.AppendLine($"  - {line}");
     }
 
-    private static List<string> SplitLines(string? value)
+    private static List<string> SplitLines(string? value) =>
+        SplitTrimmed(value, new[] { "\r\n", "\n", "\r" });
+
+    private static List<string> SplitTrimmed(string? value, string[] separators)
     {
         if (string.IsNullOrWhiteSpace(value)) return new List<string>();
-        return value.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries)
+        return value.Split(separators, StringSplitOptions.RemoveEmptyEntries)
                     .Select(s => s.Trim())
                     .Where(s => s.Length > 0)
                     .ToList();
-    }
-
-    private IReadOnlyList<string> GetTechOptions(Dictionary<string, string> answers)
-    {
-        var areas = ParseMultiSelect(answers.GetValueOrDefault(QuestionKeys.Area, ""));
-        var options = new List<string>();
-        foreach (var area in areas)
-            if (TechByArea.TryGetValue(area, out var techs))
-                foreach (var tech in techs)
-                    if (!options.Contains(tech)) options.Add(tech);
-        return options;
-    }
-
-    private IReadOnlyList<string> GetConstraintOptions(Dictionary<string, string> answers)
-    {
-        var areas = ParseMultiSelect(answers.GetValueOrDefault(QuestionKeys.Area, ""));
-        var options = new List<string>(GeneralConstraints);
-        foreach (var area in areas)
-            if (ConstraintsByArea.TryGetValue(area, out var constraints))
-                foreach (var c in constraints)
-                    if (!options.Contains(c)) options.Add(c);
-        return options;
     }
 
     private static IReadOnlyList<string> GetCombinedOptions(
@@ -407,14 +414,8 @@ public class RecipeService
         return items.Count == 1 ? items[0] : string.Join(", ", items);
     }
 
-    public static List<string> ParseMultiSelect(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value)) return new List<string>();
-        return value.Split(MultiSelectSeparator, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(s => s.Trim())
-                    .Where(s => s.Length > 0)
-                    .ToList();
-    }
+    public static List<string> ParseMultiSelect(string? value) =>
+        SplitTrimmed(value, new[] { MultiSelectSeparator });
 
     public static string JoinMultiSelect(IEnumerable<string> values) =>
         string.Join(MultiSelectSeparator, values);
