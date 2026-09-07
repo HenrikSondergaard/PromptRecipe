@@ -444,9 +444,9 @@ public class NewAgenticOptionsTests
         var options = Svc.GetOptionsFor(QuestionKeys.DoNotTouch, new Dictionary<string, string>());
         Assert.Equal(4, options.Count);
         Assert.Contains("Files outside the task's scope", options);
-        Assert.Contains("CI/CD workflow files", options);
+        Assert.Contains("CI/CD workflow files (.github/)", options);
         Assert.Contains("Config / secrets / environment files", options);
-        Assert.Contains("Database schema / migrations", options);
+        Assert.Contains("Schema / migration files", options);
     }
 
     [Fact]
@@ -457,8 +457,8 @@ public class NewAgenticOptionsTests
             [QuestionKeys.Area] = "Backend / API"
         };
         var options = Svc.GetOptionsFor(QuestionKeys.DoNotTouch, answers);
-        Assert.Contains("Public API contracts", options);
-        Assert.Contains("Auth logic", options);
+        Assert.Contains("Public API surface files (controllers / DTOs)", options);
+        Assert.Contains("Auth source files", options);
         Assert.Equal(options.Count, options.Distinct().Count());
     }
 
@@ -473,11 +473,98 @@ public class NewAgenticOptionsTests
         var expected = new[]
         {
             "Files outside the task's scope",
-            "CI/CD workflow files",
+            "CI/CD workflow files (.github/)",
             "Config / secrets / environment files",
-            "Database schema / migrations"
+            "Schema / migration files"
         };
         Assert.Equal(expected, options);
+    }
+
+    [Fact]
+    public void DoNotTouch_FrontendArea_OptionsComeOnlyFromGeneralAndAreaMaps_InOrder()
+    {
+        var answers = new Dictionary<string, string>
+        {
+            [QuestionKeys.Area] = "Frontend / UI"
+        };
+        var options = Svc.GetOptionsFor(QuestionKeys.DoNotTouch, answers);
+        var expected = new[]
+        {
+            "Files outside the task's scope",
+            "CI/CD workflow files (.github/)",
+            "Config / secrets / environment files",
+            "Schema / migration files",
+            "UI style files (CSS / theme)"
+        };
+        Assert.Equal(expected, options);
+    }
+
+    [Fact]
+    public void Verification_FrontendArea_OptionsComeOnlyFromGeneralAndAreaMaps_InOrder()
+    {
+        var answers = new Dictionary<string, string>
+        {
+            [QuestionKeys.Area] = "Frontend / UI"
+        };
+        var options = Svc.GetOptionsFor(QuestionKeys.Verification, answers);
+        var expected = new[]
+        {
+            "Run the existing test suite",
+            "Write new tests for the change",
+            "Project must build without errors/warnings",
+            "Run linter / formatter",
+            "Manual check in the browser"
+        };
+        Assert.Equal(expected, options);
+    }
+
+    [Fact]
+    public void DoNotTouch_And_Verification_BaseOptionsAreEmpty()
+    {
+        var byKey = RecipeService.Questions.ToDictionary(q => q.Key);
+        Assert.Empty(byKey[QuestionKeys.DoNotTouch].BaseOptions);
+        Assert.Empty(byKey[QuestionKeys.Verification].BaseOptions);
+    }
+
+    [Fact]
+    public void DoNotTouch_AuthArea_IncludesAuthSpecificOptions()
+    {
+        var answers = new Dictionary<string, string>
+        {
+            [QuestionKeys.Area] = "Auth / Security"
+        };
+        var options = Svc.GetOptionsFor(QuestionKeys.DoNotTouch, answers);
+        Assert.Contains("Auth source files", options);
+        Assert.Contains("Token / secret files", options);
+    }
+
+    [Fact]
+    public void Verification_DatabaseArea_IncludesDatabaseSpecificOptions()
+    {
+        var answers = new Dictionary<string, string>
+        {
+            [QuestionKeys.Area] = "Database"
+        };
+        var options = Svc.GetOptionsFor(QuestionKeys.Verification, answers);
+        Assert.Contains("Migrations are reversible", options);
+        Assert.Contains("No data loss on existing tables", options);
+    }
+
+    [Theory]
+    [InlineData(QuestionKeys.DoNotTouch)]
+    [InlineData(QuestionKeys.Verification)]
+    public void AllNineAreas_YieldAtLeastOneOption(string key)
+    {
+        var areas = new[]
+        {
+            "Frontend / UI", "Backend / API", "Database", "Auth / Security",
+            "Infra / DevOps", "Testing / QA", "Documentation", "Mobile", "CLI / Scripts"
+        };
+        foreach (var area in areas)
+        {
+            var answers = new Dictionary<string, string> { [QuestionKeys.Area] = area };
+            Assert.NotEmpty(Svc.GetOptionsFor(key, answers));
+        }
     }
 
     [Fact]
@@ -543,9 +630,9 @@ public class NewAgenticCartSectionTests
     public void DoNotTouch_IncludedWithExactLabel()
     {
         var answers = MinimalAnswers();
-        answers[QuestionKeys.DoNotTouch] = "CI/CD workflow files||Config / secrets / environment files";
+        answers[QuestionKeys.DoNotTouch] = "CI/CD workflow files (.github/)||Config / secrets / environment files";
         var cart = Svc.AssembleCart(answers);
-        Assert.Contains("Do not touch: CI/CD workflow files, Config / secrets / environment files", cart);
+        Assert.Contains("Do not touch: CI/CD workflow files (.github/), Config / secrets / environment files", cart);
     }
 
     [Fact]
@@ -618,17 +705,22 @@ public class NewAgenticDiscernmentTests
     private static readonly RecipeService Svc = new();
 
     [Fact]
-    public void AcceptanceCriteria_OneItemPerLine()
+    public void AcceptanceCriteria_AddsSingleSummaryItem()
     {
         var answers = new Dictionary<string, string>
         {
             [QuestionKeys.AcceptanceCriteria] = "Login page renders\nRedirect works\n\nTests pass"
         };
         var items = Svc.GetDiscernmentItems(answers);
-        Assert.Contains("Verify criterion: Login page renders", items);
-        Assert.Contains("Verify criterion: Redirect works", items);
-        Assert.Contains("Verify criterion: Tests pass", items);
-        Assert.Equal(3, items.Count(i => i.StartsWith("Verify criterion:", StringComparison.Ordinal)));
+        Assert.Contains("Verify every acceptance criterion listed in the cart above", items);
+        Assert.DoesNotContain(items, i => i.StartsWith("Verify criterion:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void NoAcceptanceCriteria_NoSummaryItem()
+    {
+        var items = Svc.GetDiscernmentItems(new Dictionary<string, string>());
+        Assert.DoesNotContain(items, i => i.Contains("acceptance criterion", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -636,11 +728,11 @@ public class NewAgenticDiscernmentTests
     {
         var answers = new Dictionary<string, string>
         {
-            [QuestionKeys.DoNotTouch] = "CI/CD workflow files||Database schema / migrations"
+            [QuestionKeys.DoNotTouch] = "CI/CD workflow files (.github/)||Schema / migration files"
         };
         var items = Svc.GetDiscernmentItems(answers);
-        Assert.Contains("Confirm this was not modified: CI/CD workflow files", items);
-        Assert.Contains("Confirm this was not modified: Database schema / migrations", items);
+        Assert.Contains("Confirm this was not modified: CI/CD workflow files (.github/)", items);
+        Assert.Contains("Confirm this was not modified: Schema / migration files", items);
     }
 
     [Fact]
@@ -648,11 +740,28 @@ public class NewAgenticDiscernmentTests
     {
         var answers = new Dictionary<string, string>
         {
-            [QuestionKeys.DoNotTouch] = "Auth logic"
+            [QuestionKeys.DoNotTouch] = "Auth source files"
         };
         var items = Svc.GetDiscernmentItems(answers);
-        Assert.Contains("Confirm this was not modified: Auth logic", items);
+        Assert.Contains("Confirm this was not modified: Auth source files", items);
         Assert.DoesNotContain(items, i => i.Contains("were not modified", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Milestones_AddOrderedConfirmItems()
+    {
+        var answers = new Dictionary<string, string>
+        {
+            [QuestionKeys.Milestones] = "Scaffold\nStyle\n\nWire up"
+        };
+        var items = Svc.GetDiscernmentItems(answers);
+        var expected = new[]
+        {
+            "Confirm milestone delivered (in order): Scaffold",
+            "Confirm milestone delivered (in order): Style",
+            "Confirm milestone delivered (in order): Wire up"
+        };
+        Assert.Equal(expected, items.Where(i => i.StartsWith("Confirm milestone delivered", StringComparison.Ordinal)).ToArray());
     }
 
     [Fact]
@@ -736,5 +845,62 @@ public class NewAgenticDiligenceTests
         var items = Svc.GetDiligenceItems(recipe, new Dictionary<string, string>());
         Assert.DoesNotContain("Run the full test suite", items);
         Assert.DoesNotContain(items, i => i.StartsWith("Verify: ", StringComparison.Ordinal));
+    }
+}
+
+public class EnvironmentDiligenceTests
+{
+    private static readonly RecipeService Svc = new();
+
+    [Fact]
+    public void DontTouchMainBranch_AddsMainBranchConfirmItem()
+    {
+        var recipe = new Dictionary<string, string>
+        {
+            [QuestionKeys.Environment] = "Don't touch the main branch"
+        };
+        var items = Svc.GetDiligenceItems(recipe, new Dictionary<string, string>());
+        Assert.Contains("Confirm nothing was committed or pushed to the main branch", items);
+        Assert.DoesNotContain(items, i => i.StartsWith("Confirm: Don't touch the main branch", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void FeatureBranchOption_AddsFeatureBranchConfirmItem()
+    {
+        var recipe = new Dictionary<string, string>
+        {
+            [QuestionKeys.Environment] = "Create a feature branch first"
+        };
+        var items = Svc.GetDiligenceItems(recipe, new Dictionary<string, string>());
+        Assert.Contains("Confirm work happened on a feature branch, not main", items);
+    }
+
+    [Fact]
+    public void NoNewDependenciesOption_AddsDependenciesConfirmItem()
+    {
+        var recipe = new Dictionary<string, string>
+        {
+            [QuestionKeys.Environment] = "Never install new dependencies without asking"
+        };
+        var items = Svc.GetDiligenceItems(recipe, new Dictionary<string, string>());
+        Assert.Contains("Confirm no new dependencies were added without asking", items);
+    }
+
+    [Fact]
+    public void OtherEnvironmentChoice_FlowsThroughGenericConfirmItem()
+    {
+        var recipe = new Dictionary<string, string>
+        {
+            [QuestionKeys.Environment] = "Use the project's existing lint/format commands"
+        };
+        var items = Svc.GetDiligenceItems(recipe, new Dictionary<string, string>());
+        Assert.Contains("Confirm: Use the project's existing lint/format commands", items);
+    }
+
+    [Fact]
+    public void EmptyEnvironment_NoConfirmItems()
+    {
+        var items = Svc.GetDiligenceItems(new Dictionary<string, string>(), new Dictionary<string, string>());
+        Assert.DoesNotContain(items, i => i.StartsWith("Confirm", StringComparison.Ordinal));
     }
 }
