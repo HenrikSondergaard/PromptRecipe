@@ -312,6 +312,12 @@ body {
 
 .btn-secondary:hover { background: var(--color-border); }
 
+.btn-clear-selection {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.875rem;
+    align-self: flex-start;
+}
+
 .btn-copy {
     background: var(--color-accent);
     color: var(--color-surface);

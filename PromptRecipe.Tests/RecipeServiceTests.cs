@@ -961,3 +961,95 @@ public class EnvironmentDiligenceTests
         Assert.DoesNotContain(items, i => i.StartsWith("Confirm", StringComparison.Ordinal));
     }
 }
+
+public class IsRequiredTests
+{
+    [Theory]
+    [InlineData(QuestionKeys.TaskType)]
+    [InlineData(QuestionKeys.Area)]
+    [InlineData(QuestionKeys.WhatToDo)]
+    [InlineData(QuestionKeys.OutputFormat)]
+    public void CoreQuestions_AreRequired(string key)
+    {
+        Assert.True(RecipeService.IsRequired(key));
+    }
+
+    [Theory]
+    [InlineData(QuestionKeys.StopAndAsk)]
+    [InlineData(QuestionKeys.ExtraContext)]
+    public void OptionalQuestions_AreNotRequired(string key)
+    {
+        Assert.False(RecipeService.IsRequired(key));
+    }
+
+    [Fact]
+    public void RequiredKeys_AreExactlyTheCoreQuestions()
+    {
+        Assert.Equal(
+            new[] { QuestionKeys.TaskType, QuestionKeys.Area, QuestionKeys.WhatToDo, QuestionKeys.OutputFormat },
+            RecipeService.RequiredKeys);
+    }
+}
+
+public class StopAndAskCartTests
+{
+    private static readonly RecipeService Svc = new();
+
+    private static Dictionary<string, string> MinimalAnswers() => new()
+    {
+        [QuestionKeys.TaskType] = "New feature",
+        [QuestionKeys.Area] = "Frontend / UI",
+        [QuestionKeys.WhatToDo] = "Add a login page",
+        [QuestionKeys.OutputFormat] = "Code + brief explanation"
+    };
+
+    [Fact]
+    public void Unanswered_CartOmitsStopAndAskSection()
+    {
+        var cart = Svc.AssembleCart(MinimalAnswers());
+        Assert.DoesNotContain("Stop and ask when", cart);
+    }
+
+    [Fact]
+    public void Answered_CartContainsStopAndAskLine()
+    {
+        var answers = MinimalAnswers();
+        answers[QuestionKeys.StopAndAsk] = "If requirements are ambiguous";
+        var cart = Svc.AssembleCart(answers);
+        Assert.Contains("Stop and ask when: If requirements are ambiguous", cart);
+    }
+
+    [Fact]
+    public void ClearedToEmpty_CartOmitsStopAndAskSection()
+    {
+        var answers = MinimalAnswers();
+        answers[QuestionKeys.StopAndAsk] = "";
+        var cart = Svc.AssembleCart(answers);
+        Assert.DoesNotContain("Stop and ask when", cart);
+    }
+
+    [Fact]
+    public void Unanswered_NoPauseAndAskDiscernmentItem()
+    {
+        var items = Svc.GetDiscernmentItems(MinimalAnswers());
+        Assert.DoesNotContain(items, i => i.Contains("pause and ask"));
+    }
+
+    [Fact]
+    public void Answered_DiscernmentItemAdded()
+    {
+        var answers = MinimalAnswers();
+        answers[QuestionKeys.StopAndAsk] = "Never — make reasonable assumptions and document them";
+        var items = Svc.GetDiscernmentItems(answers);
+        Assert.Contains(items, i => i.Contains("Agent should pause and ask when"));
+    }
+
+    [Fact]
+    public void ClearedToWhitespace_NoPauseAndAskDiscernmentItem()
+    {
+        var answers = MinimalAnswers();
+        answers[QuestionKeys.StopAndAsk] = " ";
+        var items = Svc.GetDiscernmentItems(answers);
+        Assert.DoesNotContain(items, i => i.Contains("pause and ask"));
+    }
+}
