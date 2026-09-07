@@ -639,8 +639,20 @@ public class NewAgenticDiscernmentTests
             [QuestionKeys.DoNotTouch] = "CI/CD workflow files||Database schema / migrations"
         };
         var items = Svc.GetDiscernmentItems(answers);
-        Assert.Contains("Confirm CI/CD workflow files were not modified", items);
-        Assert.Contains("Confirm Database schema / migrations were not modified", items);
+        Assert.Contains("Confirm this was not modified: CI/CD workflow files", items);
+        Assert.Contains("Confirm this was not modified: Database schema / migrations", items);
+    }
+
+    [Fact]
+    public void DoNotTouch_SingularChoice_UsesNumberNeutralPhrasing()
+    {
+        var answers = new Dictionary<string, string>
+        {
+            [QuestionKeys.DoNotTouch] = "Auth logic"
+        };
+        var items = Svc.GetDiscernmentItems(answers);
+        Assert.Contains("Confirm this was not modified: Auth logic", items);
+        Assert.DoesNotContain(items, i => i.Contains("were not modified", StringComparison.Ordinal));
     }
 
     [Fact]

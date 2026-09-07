@@ -277,7 +277,7 @@ public class RecipeService
             items.Add($"Verify criterion: {criterion}");
 
         foreach (var choice in doNotTouch.Where(choice => !string.IsNullOrWhiteSpace(choice)))
-            items.Add($"Confirm {choice} were not modified");
+            items.Add($"Confirm this was not modified: {choice}");
 
         if (!string.IsNullOrWhiteSpace(stopAndAsk))
             items.Add($"Agent should pause and ask when: {stopAndAsk}");
