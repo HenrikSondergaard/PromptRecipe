@@ -5,6 +5,7 @@ namespace PromptRecipe.Services;
 public class RecipeService
 {
     private const string MultiSelectSeparator = "||";
+    private const string OtherPrefix = "Other: ";
     private const string RunExistingTestsOption = "Run the existing test suite";
     private const string WriteNewTestsOption = "Write new tests for the change";
 
@@ -269,7 +270,7 @@ public class RecipeService
             items.Add("Check CI/CD and environment variable changes carefully");
 
         foreach (var c in constraints.Where(c => !string.IsNullOrWhiteSpace(c)))
-            items.Add($"Constraint respected: \"{c}\"");
+            items.Add($"Constraint respected: \"{StripOtherPrefix(c)}\"");
 
         if (!string.IsNullOrWhiteSpace(preserveWhat))
             items.Add($"Verify this still works: {preserveWhat}");
@@ -278,7 +279,7 @@ public class RecipeService
             items.Add("Verify every acceptance criterion listed in the cart above");
 
         foreach (var choice in doNotTouch.Where(choice => !string.IsNullOrWhiteSpace(choice)))
-            items.Add($"Confirm this was not modified: {choice}");
+            items.Add($"Confirm this was not modified: {StripOtherPrefix(choice)}");
 
         foreach (var milestone in milestones)
             items.Add($"Confirm milestone delivered (in order): {milestone}");
@@ -337,7 +338,7 @@ public class RecipeService
                      !string.IsNullOrWhiteSpace(choice)
                      && choice != RunExistingTestsOption
                      && choice != WriteNewTestsOption))
-            items.Add($"Verify: {choice}");
+            items.Add($"Verify: {StripOtherPrefix(choice)}");
 
         foreach (var choice in environment)
         {
@@ -355,7 +356,7 @@ public class RecipeService
                     items.Add("Confirm no new dependencies were added without asking");
                     break;
                 default:
-                    items.Add($"Confirm: {choice}");
+                    items.Add($"Confirm: {StripOtherPrefix(choice)}");
                     break;
             }
         }
@@ -416,6 +417,16 @@ public class RecipeService
 
     public static List<string> ParseMultiSelect(string? value) =>
         SplitTrimmed(value, new[] { MultiSelectSeparator });
+
+    /// <summary>
+    /// Removes the "Other: " prefix that RecipeForm stores on custom
+    /// multi-select values, so interpolated sentences read naturally
+    /// (e.g. "Confirm this was not modified: my-secret-folder").
+    /// </summary>
+    public static string StripOtherPrefix(string? value) =>
+        value is not null && value.StartsWith(OtherPrefix, StringComparison.Ordinal)
+            ? value[OtherPrefix.Length..]
+            : value ?? string.Empty;
 
     public static string JoinMultiSelect(IEnumerable<string> values) =>
         string.Join(MultiSelectSeparator, values);
